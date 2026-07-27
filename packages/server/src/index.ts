@@ -1,8 +1,10 @@
 import { buildApp } from './app.js'
 import { config } from './config.js'
 import { startWikiSchedulers } from './services/wiki-scheduler.js'
+import { runMigrations } from './db/connection.js'
 
 async function main(): Promise<void> {
+  await runMigrations()
   const app = await buildApp()
 
   try {

@@ -17,7 +17,7 @@ services:
       retries: 5
     restart: unless-stopped
 
-  # 백엔드 API 서버 (Fastify)
+  # MyDevBox 서버 (API / WebSocket / 정적 프론트엔드를 단일 origin으로 서빙)
   server:
     build:
       context: .
@@ -30,21 +30,18 @@ services:
       - HOST=0.0.0.0
       - DATABASE_URL=postgresql://mydevbox:mydevbox@db:5432/mydevbox
       - ENCRYPTION_KEY=${ENCRYPTION_KEY:-mydevbox-dev-encryption-key-change-in-prod}
+      # 외부 git 저장소 자동 동기화 주기 (기본 5분)
+      - MYDEVBOX_GIT_SYNC_INTERVAL_MS=${MYDEVBOX_GIT_SYNC_INTERVAL_MS:-300000}
     depends_on:
       db:
         condition: service_healthy
-    restart: unless-stopped
-
-  # 프론트엔드 웹 서버 (정적 서빙)
-  web:
-    build:
-      context: .
-      dockerfile: packages/web/Dockerfile
-    ports:
-      - "5173:5173"
-    depends_on:
-      - server
+    volumes:
+      # 프로젝트 소스(~/repos)와 크로스프로젝트 마스터 위키 영속화
+      - repos:/root/repos
+      - masterwiki:/root/.mydevbox
     restart: unless-stopped
 
 volumes:
   pgdata:
+  repos:
+  masterwiki:

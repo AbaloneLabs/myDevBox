@@ -11,11 +11,12 @@ import type { WebSocket } from 'ws'
 import type { ClientMessage, ServerMessage } from '@mydevbox/shared'
 import { connectionManager } from './connection.js'
 import { sessionRegistry, buildSystemPrompt, getProvider } from '../agent/index.js'
-import { createProjectTools, createDbTodoTools } from '../agent/tools/index.js'
+import { createProjectTools, createDbTodoTools, createDbWikiTools } from '../agent/tools/index.js'
 import type { AgentEvent, AgentLoopConfig, Message, ModelConfig } from '../agent/types.js'
 import { db } from '../db/connection.js'
 import { projects, agentConfigs, chatMessages } from '../db/schema.js'
 import { decrypt } from '../db/crypto.js'
+import { wikiService } from '../services/wiki-service.js'
 import { eq } from 'drizzle-orm'
 import { logger } from '../logger.js'
 
@@ -115,17 +116,21 @@ async function handleSendMessage(
     // 5. Create tools
     const fileTools = createProjectTools(projectRow.path)
     const dbTodoTools = createDbTodoTools(projectId)
+    const dbWikiTools = createDbWikiTools(projectId)
     // Replace in-memory todo tools with DB-backed ones
     const tools = [
       ...fileTools.filter(t => !['todo_write', 'todo_read', 'plan_create'].includes(t.name)),
       ...dbTodoTools,
+      ...dbWikiTools,
     ]
 
-    // 6. Build system prompt
+    // 6. Build system prompt (with wiki preamble — index head + recent log)
+    const wikiPreamble = await wikiService.buildPreamble(projectId, { indexLines: 40, logEntries: 10 })
     const systemPrompt = buildSystemPrompt({
       projectName: projectRow.name,
       projectPath: projectRow.path,
       tools,
+      wikiPreamble,
     })
 
     // 7. Load message history from DB for context

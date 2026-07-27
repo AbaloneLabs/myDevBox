@@ -4,7 +4,7 @@
 export type WorkMode = 'developer' | 'vibe'
 
 // ============ 사이드 패널 ============
-export type SidePanelType = 'tasks' | 'plans' | 'docs' | 'preview' | null
+export type SidePanelType = 'tasks' | 'plans' | 'docs' | 'preview' | 'wiki' | null
 
 // ============ 프로젝트 ============
 export type ProjectStatus = 'idle' | 'active' | 'loading'
@@ -255,6 +255,8 @@ export type ServerMessage =
   // 외부 파일 추적 (Plan 11)
   | { type: 'tracked_file_updated'; file: TrackedFileInfo }
   | { type: 'tracked_file_deleted'; path: string }
+  // 위키 이벤트
+  | { type: 'wiki_updated'; projectId: string | null; path: string }
   // 연결 상태
   | { type: 'connected'; projectId: string }
   | { type: 'error'; message: string }
@@ -314,4 +316,72 @@ export interface RunPreset {
   env?: Record<string, string>
   shortcut?: string
   autoDetected: boolean
+}
+
+// ============ 위키 (Wiki) ============
+
+export type WikiPageType =
+  | 'index' | 'log' | 'gaps' | 'model' | 'controller' | 'service' | 'route'
+  | 'architecture' | 'decision' | 'dependency' | 'roadmap' | 'debt' | 'plan'
+  | 'pattern' | 'learning' | 'convention' | 'project_summary' | 'glossary'
+
+export type WikiPageStatus = 'active' | 'outdated' | 'disputed'
+
+export interface WikiFrontmatter {
+  title?: string
+  type?: WikiPageType
+  source?: string
+  sha?: string
+  lines?: string
+  tags?: string[]
+  created?: string
+  updated?: string
+  status?: WikiPageStatus
+  tldr?: string
+}
+
+export type WikiScope = 'project' | 'master'
+
+export interface WikiPage {
+  id: string
+  projectId: string | null   // null = master wiki (cross-project)
+  path: string
+  title: string
+  type: WikiPageType
+  content: string
+  frontmatter: WikiFrontmatter
+  tags: string[]
+  status: WikiPageStatus
+  sha: string | null
+  createdAt: string
+  updatedAt: string
+}
+
+export interface WikiLogEntry {
+  id: string
+  projectId: string | null
+  op: 'ingest' | 'query' | 'lint' | 'bootstrap' | 'sync' | 'maintenance'
+  summary: string
+  meta: Record<string, unknown>
+  createdAt: string
+}
+
+export interface WikiSyncState {
+  projectId: string
+  lastCommitSha: string | null
+  updatedAt: string
+}
+
+export interface WikiBacklink {
+  fromPath: string
+  fromTitle: string
+  context: string
+}
+
+export interface WikiSearchHit {
+  path: string
+  title: string
+  type: WikiPageType
+  snippet: string
+  score: number
 }

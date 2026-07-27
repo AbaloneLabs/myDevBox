@@ -13,6 +13,7 @@ import { agentRoutes } from './routes/agent.js'
 import { taskRoutes } from './routes/tasks.js'
 import { planRoutes } from './routes/plans.js'
 import { docRoutes } from './routes/docs.js'
+import { wikiRoutes } from './routes/wiki.js'
 import { runRoutes } from './routes/run.js'
 import { setupWebSocket } from './ws/server.js'
 
@@ -45,6 +46,7 @@ export async function buildApp() {
     await taskRoutes(api)
     await planRoutes(api)
     await docRoutes(api)
+    await wikiRoutes(api)
     await runRoutes(api)
   }, { prefix: '/api' })
 

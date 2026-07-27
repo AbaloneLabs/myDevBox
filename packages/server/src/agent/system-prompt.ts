@@ -14,6 +14,7 @@ export interface SystemPromptOptions {
   gitBranch?: string
   platform?: string          // process.platform
   shell?: string             // user's shell
+  wikiPreamble?: string
 }
 
 export function buildSystemPrompt(options: SystemPromptOptions): string {
@@ -24,6 +25,7 @@ export function buildSystemPrompt(options: SystemPromptOptions): string {
     gitBranch,
     platform = process.platform,
     shell = process.env.SHELL ?? (process.platform === 'win32' ? 'powershell.exe' : '/bin/bash'),
+    wikiPreamble,
   } = options
 
   const toolsList = tools
@@ -43,6 +45,10 @@ ${gitBranch ? `- Git branch: ${gitBranch}` : ''}
 - Platform: ${platform}
 - Shell: ${shell}
 
+## Project Wiki
+A self-maintaining knowledge base lives at \`wiki/\` (project) plus a cross-project master wiki. You MAINTAIN IT AUTOMATICALLY — never wait to be asked. Before answering architecture/design/decision questions, call \`wiki_query\` first. After you make code changes, finish a feature, make an architectural decision, or discover a gotcha, proactively call \`wiki_write\` to update the affected pages (model/controller/service/decision/roadmap/debt/gaps) and append a log entry. The wiki is this project's accumulating memory.
+${wikiPreamble ?? ''}
+
 ## Available Tools
 ${toolsList}
 
@@ -55,6 +61,7 @@ ${toolsList}
 - When making file changes, show a summary of what changed
 - Use cross-platform compatible paths (path.join, path.sep)
 - Use os.homedir() instead of ~ for home directory
+- Maintain the project wiki proactively: query before answering architecture/design questions, write after making changes or decisions
 - Use os.tmpdir() instead of /tmp for temporary files
 
 Current date: ${currentDate}`

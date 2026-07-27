@@ -43,6 +43,7 @@ export { snapshotManager } from './snapshot.js'
 
 // DB-backed todo tools (used by WebSocket handler)
 export { createDbTodoTools } from './todo-plan.js'
+export { createDbWikiTools } from './wiki.js'
 
 /**
  * Create the full set of agent tools for a project.

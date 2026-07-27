@@ -1,5 +1,6 @@
 import { useStore } from './store/useStore'
 import { ProjectLauncher } from './components/ProjectLauncher'
+import { GlobalDashboard } from './components/GlobalDashboard'
 import { TopBar } from './components/TopBar'
 import { FileTree } from './components/FileTree'
 import { EditorPanel } from './components/EditorPanel'
@@ -9,15 +10,25 @@ import { TerminalPanel } from './components/Terminal'
 import './App.css'
 
 export default function App() {
-  const activeProjectId = useStore((s) => s.activeProjectId)
+  const view = useStore((s) => s.view)
+  const setView = useStore((s) => s.setView)
   const workMode = useStore((s) => s.workMode)
   const terminalVisible = useStore((s) => s.terminalVisible)
+  const activeProjectId = useStore((s) => s.activeProjectId)
 
-  // 프로젝트가 선택되지 않은 경우 - 프로젝트 런처 표시
-  if (!activeProjectId) {
-    return <ProjectLauncher />
+  // 글로벌 대시보드 (크로스프로젝트, 프로젝트 미선택)
+  if (view === 'dashboard') {
+    return <GlobalDashboard onBack={() => setView('launcher')} />
   }
 
+  // 프로젝트가 선택되지 않은 경우 - 프로젝트 런처 표시
+  if (view === 'launcher') {
+    return <ProjectLauncher onOpenDashboard={() => setView('dashboard')} />
+  }
+
+
+  // view === 'project' implies a project is open; guard for type narrowing.
+  if (!activeProjectId) return null
   // 프로젝트가 열린 경우 - 작업 공간 표시
   const isEditorVisible = workMode === 'developer'
 

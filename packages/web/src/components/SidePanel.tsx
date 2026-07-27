@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useStore } from '../store/useStore'
 import ReactMarkdown from 'react-markdown'
+import remarkGfm from 'remark-gfm'
 import type { TaskStatus, TaskPriority } from '../types'
 import {
   CloseIcon,
@@ -12,6 +13,8 @@ import {
   TrashIcon,
   ScanIcon,
 } from './Icons'
+import { WikiPanel } from './WikiPanel'
+import { remarkWikilink } from '../remark/wikilink'
 import './SidePanel.css'
 
 export function SidePanel() {
@@ -28,6 +31,7 @@ export function SidePanel() {
           {activePanel === 'plans' && '계획'}
           {activePanel === 'docs' && '문서'}
           {activePanel === 'preview' && '미리보기'}
+          {activePanel === 'wiki' && '위키'}
         </span>
         <button className="side-panel-close" onClick={() => setActivePanel(null)}>
           <CloseIcon size={16} />
@@ -38,6 +42,7 @@ export function SidePanel() {
         {activePanel === 'plans' && <PlansPanel />}
         {activePanel === 'docs' && <DocsPanel />}
         {activePanel === 'preview' && <PreviewPanel />}
+        {activePanel === 'wiki' && <WikiPanel />}
       </div>
     </div>
   )
@@ -273,7 +278,7 @@ function DocsPanel() {
       </div>
       {selected && (
         <div className="doc-detail">
-          <ReactMarkdown>{selected.content}</ReactMarkdown>
+          <ReactMarkdown remarkPlugins={[remarkGfm, remarkWikilink]}>{selected.content}</ReactMarkdown>
         </div>
       )}
     </div>

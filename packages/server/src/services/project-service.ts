@@ -6,6 +6,9 @@ import { db } from '../db/connection.js'
 import { projects } from '../db/schema.js'
 import { encrypt } from '../db/crypto.js'
 import { expandTilde, validateProjectPath, isGitRepo } from './path-service.js'
+import { wikiService } from './wiki-service.js'
+import { bootstrapWiki } from './wiki-maintenance.js'
+import { gitSync } from './git-sync.js'
 import type { Project, ScannedDir, ProjectStatus } from '@mydevbox/shared'
 import type { CreateProjectInput, UpdateProjectInput } from '@mydevbox/shared'
 
@@ -242,6 +245,13 @@ export class ProjectService {
       })
       .where(eq(projects.id, id))
       .returning()
+
+    // Wiki maintenance triggers (fire-and-forget): bootstrap if empty,
+    // otherwise check for external git commits since the watermark.
+    void wikiService.isEmpty(id).then((empty) => {
+      if (empty) void bootstrapWiki(id)
+      else void gitSync.checkProject(id)
+    }).catch(() => { /* best-effort */ })
 
     return rowToProject(row)
   }

@@ -17,8 +17,12 @@ import type {
   Doc,
   TaskStatus,
   TaskPriority,
-  RunResult,
   RunPreset,
+  RunResult,
+  WikiPage,
+  WikiSearchHit,
+  WikiBacklink,
+  WikiSyncState,
 } from '@mydevbox/shared'
 
 const API_BASE = '/api'
@@ -27,10 +31,15 @@ async function request<T>(
   path: string,
   options?: RequestInit,
 ): Promise<T> {
-  const res = await fetch(`${API_BASE}${path}`, {
-    headers: { 'Content-Type': 'application/json' },
-    ...options,
-  })
+  const opts = options ?? {}
+  const headers: Record<string, string> = { ...(opts.headers as Record<string, string> | undefined) }
+  // Only declare JSON content-type when there is a body — Fastify 5 rejects
+  // empty bodies presented as application/json (FST_ERR_CTP_EMPTY_JSON_BODY),
+  // which broke bodyless POSTs like openProject / push / pull / abort.
+  if (opts.body !== undefined && !headers['Content-Type']) {
+    headers['Content-Type'] = 'application/json'
+  }
+  const res = await fetch(`${API_BASE}${path}`, { ...opts, headers })
 
   const body: ApiResponse<T> = await res.json()
 
@@ -393,6 +402,42 @@ export const api = {
     return request<Doc[]>(`/projects/${projectId}/docs/scan`, {
       method: 'POST',
     })
+  },
+
+  // ============ Wiki API (read-only; writes are agent-only) ============
+
+  async listWikiPages(projectId: string): Promise<WikiPage[]> {
+    return request<WikiPage[]>(`/projects/${projectId}/wiki`)
+  },
+
+  async getWikiPage(projectId: string, path: string): Promise<WikiPage> {
+    return request<WikiPage>(`/projects/${projectId}/wiki/page?path=${encodeURIComponent(path)}`)
+  },
+
+  async searchWiki(projectId: string, query: string): Promise<WikiSearchHit[]> {
+    return request<WikiSearchHit[]>(`/projects/${projectId}/wiki/search?q=${encodeURIComponent(query)}`)
+  },
+
+  async getWikiBacklinks(projectId: string, path: string): Promise<WikiBacklink[]> {
+    return request<WikiBacklink[]>(`/projects/${projectId}/wiki/backlinks?path=${encodeURIComponent(path)}`)
+  },
+
+  async getWikiSyncState(projectId: string): Promise<WikiSyncState | null> {
+    return request<WikiSyncState | null>(`/projects/${projectId}/wiki/sync-state`)
+  },
+
+  async listMasterWiki(): Promise<WikiPage[]> {
+    return request<WikiPage[]>('/wiki/master')
+  },
+
+  async getDashboard(): Promise<{
+    projects: Array<{ id: string; name: string }>
+    tasksByStatus: Record<string, Array<{ id: string; projectId: string; name: string; title: string; priority: string }>>
+    plans: Array<{ id: string; projectId: string; name: string; title: string; version: string; createdAt: string }>
+    masterPages: WikiPage[]
+    recentLog: Array<{ id: string; projectId: string | null; op: string; summary: string; createdAt: string }>
+  }> {
+    return request('/dashboard')
   },
 
   // ============ 코드 실행 & 터미널 ============

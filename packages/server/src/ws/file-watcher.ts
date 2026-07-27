@@ -11,6 +11,7 @@ import path from 'node:path'
 import type { FSWatcher } from 'chokidar'
 import { connectionManager } from './connection.js'
 import { DEFAULT_IGNORE_PATTERNS } from '../services/file-utils.js'
+import { wikiMaintenance } from '../services/wiki-maintenance.js'
 
 interface WatcherEntry {
   watcher: FSWatcher
@@ -55,6 +56,7 @@ class FileWatcherManager {
           type: 'file_changed',
           path: relPath,
         })
+        wikiMaintenance.enqueue(projectId, [relPath])
       })
 
       watcher.on('add', (filePath) => {
@@ -63,6 +65,7 @@ class FileWatcherManager {
           type: 'file_created',
           path: relPath,
         })
+        wikiMaintenance.enqueue(projectId, [relPath])
       })
 
       watcher.on('unlink', (filePath) => {

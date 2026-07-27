@@ -80,6 +80,24 @@
   background: var(--accent-hover);
 }
 
+.launcher-dashboard-btn {
+  padding: 7px 14px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border-color, var(--accent));
+  background: transparent;
+  color: var(--accent);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  margin-top: 12px;
+}
+
+.launcher-dashboard-btn:hover {
+  background: var(--accent);
+  color: var(--bg-tertiary);
+}
+
 /* ============ 빈 상태 ============ */
 .launcher-empty {
   text-align: center;

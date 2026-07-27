@@ -157,3 +157,22 @@ export const createRunPresetSchema = z.object({
 })
 
 export type CreateRunPresetInput = z.infer<typeof createRunPresetSchema>
+
+// ============ Wiki ============
+export const createWikiPageSchema = z.object({
+  path: z.string().min(1),
+  title: z.string().min(1),
+  content: z.string(),
+  type: z.enum([
+    'index', 'log', 'gaps', 'model', 'controller', 'service', 'route',
+    'architecture', 'decision', 'dependency', 'roadmap', 'debt', 'plan',
+    'pattern', 'learning', 'convention', 'project_summary', 'glossary',
+  ]).optional(),
+  tags: z.array(z.string()).optional(),
+  frontmatter: z.record(z.string(), z.unknown()).optional(),
+})
+
+export type CreateWikiPageInput = z.infer<typeof createWikiPageSchema>
+
+export const updateWikiPageSchema = createWikiPageSchema.partial()
+export type UpdateWikiPageInput = z.infer<typeof updateWikiPageSchema>

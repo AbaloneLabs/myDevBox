@@ -15,6 +15,9 @@ import type {
   TaskPriority,
   RunResult,
   RunPreset,
+  WikiPage,
+  WikiSearchHit,
+  WikiSyncState,
 } from '../types'
 import { api } from '../api/client'
 import { wsClient } from '../api/ws-client'
@@ -24,6 +27,10 @@ interface AppState {
   loading: boolean
   error: string | null
   setError: (error: string | null) => void
+
+  // ============ 앱 뷰 ============
+  view: 'launcher' | 'dashboard' | 'project'
+  setView: (view: 'launcher' | 'dashboard' | 'project') => void
 
   // ============ 프로젝트 관리 ============
   projects: Project[]
@@ -131,6 +138,18 @@ interface AppState {
   deleteDoc: (docId: string) => Promise<void>
   scanDocs: () => Promise<void>
 
+  // ============ 위키 (Wiki) ============
+  wikiPages: WikiPage[]
+  activeWikiPath: string | null
+  wikiSyncState: WikiSyncState | null
+  wikiSearchHits: WikiSearchHit[]
+  wikiSearchQuery: string
+  loadWiki: () => Promise<void>
+  selectWikiPage: (path: string | null) => void
+  searchWiki: (query: string) => Promise<void>
+  loadWikiSyncState: () => Promise<void>
+  setWikiSearchQuery: (query: string) => void
+
   // ============ 에이전트 채팅 ============
   messages: ChatMessage[]
   addMessage: (message: ChatMessage) => void
@@ -180,6 +199,11 @@ const emptyWorkspace = {
   plans: [] as Plan[],
   activePlanId: null as string | null,
   docs: [] as Doc[],
+  wikiPages: [] as WikiPage[],
+  activeWikiPath: null as string | null,
+  wikiSyncState: null as WikiSyncState | null,
+  wikiSearchHits: [] as WikiSearchHit[],
+  wikiSearchQuery: '',
   messages: [] as ChatMessage[],
   activePanel: null as SidePanelType,
   gitInfo: null as GitInfo | null,
@@ -195,6 +219,9 @@ export const useStore = create<AppState>((set) => ({
   loading: false,
   error: null,
   setError: (error) => set({ error }),
+
+  view: 'launcher',
+  setView: (view) => set({ view }),
 
   // ============ 프로젝트 관리 ============
   projects: [],
@@ -222,6 +249,7 @@ export const useStore = create<AppState>((set) => ({
           p.id === project.id ? updated : p
         ),
         activeProjectId: project.id,
+        view: 'project',
         loading: false,
         ...emptyWorkspace,
       }))
@@ -235,6 +263,7 @@ export const useStore = create<AppState>((set) => ({
         useStore.getState().loadPlans().catch(() => {}),
         useStore.getState().loadDocs().catch(() => {}),
         useStore.getState().loadRunPresets().catch(() => {}),
+        useStore.getState().loadWiki().catch(() => {}),
       ])
       // WebSocket 연결
       useStore.getState().connectWebSocket(project.id)
@@ -250,6 +279,7 @@ export const useStore = create<AppState>((set) => ({
     wsClient.disconnect()
     set({
       activeProjectId: null,
+      view: 'launcher',
       ...emptyWorkspace,
     })
   },
@@ -724,6 +754,60 @@ export const useStore = create<AppState>((set) => ({
     }
   },
 
+  // ============ 위키 (Wiki) ============
+  wikiPages: [],
+  activeWikiPath: null,
+  wikiSyncState: null,
+  wikiSearchHits: [],
+  wikiSearchQuery: '',
+
+  loadWiki: async () => {
+    const projectId = useStore.getState().activeProjectId
+    if (!projectId) return
+    try {
+      const [pages, syncState] = await Promise.all([
+        api.listWikiPages(projectId),
+        api.getWikiSyncState(projectId).catch(() => null),
+      ])
+      const state = useStore.getState()
+      // Keep activeWikiPath valid; default to the first page.
+      const activePath = state.activeWikiPath && pages.some(p => p.path === state.activeWikiPath)
+        ? state.activeWikiPath
+        : (pages[0]?.path ?? null)
+      set({ wikiPages: pages, wikiSyncState: syncState, activeWikiPath: activePath })
+    } catch {
+      // ignore — wiki may not be bootstrapped yet
+    }
+  },
+
+  selectWikiPage: (path) => set({ activeWikiPath: path }),
+
+  setWikiSearchQuery: (query) => set({ wikiSearchQuery: query }),
+
+  searchWiki: async (query) => {
+    const projectId = useStore.getState().activeProjectId
+    if (!projectId) return
+    set({ wikiSearchQuery: query })
+    if (!query.trim()) { set({ wikiSearchHits: [] }); return }
+    try {
+      const hits = await api.searchWiki(projectId, query)
+      set({ wikiSearchHits: hits })
+    } catch {
+      // ignore
+    }
+  },
+
+  loadWikiSyncState: async () => {
+    const projectId = useStore.getState().activeProjectId
+    if (!projectId) return
+    try {
+      const syncState = await api.getWikiSyncState(projectId)
+      set({ wikiSyncState: syncState })
+    } catch {
+      // ignore
+    }
+  },
+
   // ============ 에이전트 채팅 ============
   messages: [],
   addMessage: (message) =>
@@ -794,6 +878,11 @@ export const useStore = create<AppState>((set) => ({
     wsClient.on('doc_updated', () => {
       // 에이전트가 문서를 생성했으므로 API에서 재로드
       void useStore.getState().loadDocs()
+    })
+
+    wsClient.on('wiki_updated', () => {
+      // 에이전트/유지보수가 위키 페이지를 썼으므로 API에서 재로드
+      void useStore.getState().loadWiki()
     })
 
     wsClient.on('error', (msg) => {

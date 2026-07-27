@@ -32,6 +32,7 @@ export function TopBar() {
     { type: 'plans', label: '계획', icon: DocumentIcon },
     { type: 'docs', label: '문서', icon: BookIcon },
     { type: 'preview', label: '미리보기', icon: GlobeIcon },
+    { type: 'wiki', label: '위키', icon: BookIcon },
   ]
 
   return (

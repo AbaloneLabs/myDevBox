@@ -1,4 +1,5 @@
 import { pgTable, text, integer, timestamp, jsonb, uuid, real } from 'drizzle-orm/pg-core'
+import type { WikiFrontmatter } from '@mydevbox/shared'
 
 // 프로젝트 테이블
 export const projects = pgTable('projects', {
@@ -110,4 +111,45 @@ export const runPresets = pgTable('run_presets', {
   env: jsonb('env'),
   shortcut: text('shortcut'),
   createdAt: timestamp('created_at').notNull().defaultNow(),
+})
+
+// ============ 위키 (Wiki) ============
+// 자가-유지보수 LLM 위키. projectId가 NULL이면 마스터(크로스프로젝트) 위키.
+export const wikiPages = pgTable('wiki_pages', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  projectId: uuid('project_id').references(() => projects.id, { onDelete: 'cascade' }), // NULL = master
+  path: text('path').notNull(),
+  title: text('title').notNull(),
+  type: text('type').notNull(),
+  content: text('content').notNull().default(''),
+  frontmatter: jsonb('frontmatter').$type<WikiFrontmatter>().default({}),
+  tags: text('tags').array().default([]),
+  status: text('status').default('active'),
+  sha: text('sha'),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow(),
+})
+
+// 위키 운영 로그 (ingest / bootstrap / sync / lint / maintenance)
+export const wikiLog = pgTable('wiki_log', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  projectId: uuid('project_id').references(() => projects.id, { onDelete: 'cascade' }),
+  op: text('op').notNull(),
+  summary: text('summary').notNull(),
+  meta: jsonb('meta').default({}),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+})
+
+// 마스터 집계 대기 플래그 (projectId별)
+export const syncNeeded = pgTable('sync_needed', {
+  projectId: uuid('project_id').primaryKey().references(() => projects.id, { onDelete: 'cascade' }),
+  flaggedAt: timestamp('flagged_at').notNull().defaultNow(),
+  reason: text('reason'),
+})
+
+// 커밋 워터마크: 위키가 어느 커밋까지 반영했는지 추적
+export const wikiSyncState = pgTable('wiki_sync_state', {
+  projectId: uuid('project_id').primaryKey().references(() => projects.id, { onDelete: 'cascade' }),
+  lastCommitSha: text('last_commit_sha'), // null = 아직 부트스트랩/추적 전
+  updatedAt: timestamp('updated_at').notNull().defaultNow(),
 })

@@ -14,7 +14,7 @@ import {
 } from './Icons'
 import './ProjectLauncher.css'
 
-export function ProjectLauncher() {
+export function ProjectLauncher({ onOpenDashboard }: { onOpenDashboard: () => void }) {
   const projects = useStore((s) => s.projects)
   const loadProjects = useStore((s) => s.loadProjects)
   const openProject = useStore((s) => s.openProject)
@@ -38,6 +38,9 @@ export function ProjectLauncher() {
         <p className="launcher-tagline">
           샌드박스 내에서 AI 에이전트와 함께 개발하는 환경
         </p>
+        <button className="launcher-dashboard-btn" onClick={onOpenDashboard}>
+          대시보드
+        </button>
       </div>
 
       <div className="launcher-content">

@@ -1,0 +1,490 @@
+.launcher {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  width: 100vw;
+  background: var(--bg-primary);
+  overflow-y: auto;
+}
+
+.launcher-header {
+  text-align: center;
+  padding: 60px 24px 32px;
+  flex-shrink: 0;
+}
+
+.launcher-logo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.launcher-logo-icon {
+  color: var(--accent);
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 28px;
+}
+
+.launcher-logo-text {
+  font-size: 28px;
+  font-weight: 700;
+  background: linear-gradient(135deg, var(--accent), var(--mauve));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.launcher-tagline {
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+.launcher-content {
+  max-width: 860px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 0 24px 48px;
+  flex: 1;
+}
+
+.launcher-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+
+.launcher-section-header h2 {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.launcher-add-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 14px;
+  border-radius: var(--radius);
+  background: var(--accent);
+  color: var(--bg-tertiary);
+  font-size: 12px;
+  font-weight: 600;
+  transition: all 0.15s ease;
+}
+
+.launcher-add-btn:hover {
+  background: var(--accent-hover);
+}
+
+/* ============ 빈 상태 ============ */
+.launcher-empty {
+  text-align: center;
+  padding: 60px 24px;
+  color: var(--text-muted);
+}
+
+.launcher-empty .empty-icon {
+  color: var(--bg-active);
+  margin-bottom: 16px;
+}
+
+.empty-title {
+  font-size: 15px;
+  color: var(--text-secondary);
+  margin-bottom: 8px;
+}
+
+.empty-desc {
+  font-size: 12.5px;
+  line-height: 1.6;
+}
+
+.empty-desc code {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  background: var(--bg-secondary);
+  padding: 1px 6px;
+  border-radius: 3px;
+  color: var(--accent);
+}
+
+/* ============ 프로젝트 그리드 ============ */
+.project-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 16px;
+}
+
+/* ============ 프로젝트 카드 ============ */
+.project-card {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 16px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  position: relative;
+}
+
+.project-card:hover {
+  border-color: var(--accent);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+}
+
+.project-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.project-type-badge {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 8px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.project-type-badge.git {
+  background: rgba(137, 180, 250, 0.15);
+  color: var(--accent);
+}
+
+.project-type-badge.local {
+  background: rgba(166, 227, 161, 0.15);
+  color: var(--green);
+}
+
+.project-remove-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 4px;
+  color: var(--text-muted);
+  opacity: 0;
+  transition: all 0.15s ease;
+}
+
+.project-card:hover .project-remove-btn {
+  opacity: 1;
+}
+
+.project-remove-btn:hover {
+  background: rgba(243, 139, 168, 0.15);
+  color: var(--red);
+}
+
+.project-card-body {
+  flex: 1;
+}
+
+.project-name {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 4px;
+}
+
+.project-desc {
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin-bottom: 6px;
+  line-height: 1.4;
+}
+
+.project-path {
+  font-size: 11px;
+  font-family: var(--font-mono);
+  color: var(--text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.project-remote {
+  font-size: 10px;
+  font-family: var(--font-mono);
+  color: var(--accent);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  margin-top: 3px;
+  opacity: 0.8;
+}
+
+.project-card-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 10px;
+  border-top: 1px solid var(--border);
+}
+
+.git-branch-info {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--mauve);
+}
+
+.branch-name {
+  font-size: 11px;
+  font-family: var(--font-mono);
+  color: var(--text-secondary);
+}
+
+.git-changes {
+  display: flex;
+  gap: 6px;
+}
+
+.change-count {
+  font-size: 10px;
+  font-family: var(--font-mono);
+  font-weight: 600;
+  padding: 1px 5px;
+  border-radius: 3px;
+}
+
+.change-count.modified {
+  background: rgba(249, 226, 175, 0.15);
+  color: var(--yellow);
+}
+
+.change-count.staged {
+  background: rgba(166, 227, 161, 0.15);
+  color: var(--green);
+}
+
+.change-count.untracked {
+  background: rgba(243, 139, 168, 0.15);
+  color: var(--red);
+}
+
+.project-card-open {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--accent);
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+.project-card:hover .project-card-open {
+  opacity: 1;
+}
+
+/* ============ 추가 폼 ============ */
+.add-project-form {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 20px;
+  margin-bottom: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.form-row {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.form-row label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-muted);
+}
+
+.form-row input {
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 8px 12px;
+  font-size: 13px;
+  color: var(--text-primary);
+  outline: none;
+  transition: border-color 0.15s ease;
+}
+
+.form-row input:focus {
+  border-color: var(--accent);
+}
+
+.form-row input.mono-input {
+  font-family: var(--font-mono);
+  font-size: 12px;
+}
+
+.form-hint {
+  font-size: 11px;
+  color: var(--text-muted);
+  line-height: 1.4;
+}
+
+/* ============ Git 연동 섹션 ============ */
+.git-section {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+.git-section-toggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  padding: 10px 12px;
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 500;
+  transition: all 0.15s ease;
+}
+
+.git-section-toggle:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+.git-section-hint {
+  margin-left: auto;
+  font-size: 10px;
+  color: var(--text-muted);
+  font-weight: 400;
+}
+
+.git-section-body {
+  padding: 12px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.form-cancel-btn {
+  padding: 8px 16px;
+  border-radius: var(--radius);
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 500;
+  transition: all 0.15s ease;
+}
+
+.form-cancel-btn:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+.form-submit-btn {
+  padding: 8px 16px;
+  border-radius: var(--radius);
+  background: var(--accent);
+  color: var(--bg-tertiary);
+  font-size: 12px;
+  font-weight: 600;
+  transition: all 0.15s ease;
+}
+
+.form-submit-btn:hover:not(:disabled) {
+  background: var(--accent-hover);
+}
+
+.form-submit-btn:disabled {
+  background: var(--bg-hover);
+  color: var(--text-muted);
+  cursor: not-allowed;
+}
+
+.form-cancel-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ============ 로딩 / 에러 ============ */
+.launcher-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 60px 24px;
+  color: var(--text-muted);
+}
+
+.launcher-loading p {
+  font-size: 12px;
+}
+
+.spin {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.launcher-error {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 16px;
+  margin-bottom: 16px;
+  background: rgba(243, 139, 168, 0.1);
+  border: 1px solid rgba(243, 139, 168, 0.3);
+  border-radius: var(--radius);
+  color: var(--red);
+  font-size: 12px;
+}
+
+.launcher-error button {
+  padding: 4px 12px;
+  border-radius: 4px;
+  background: rgba(243, 139, 168, 0.2);
+  color: var(--red);
+  font-size: 11px;
+  font-weight: 600;
+  transition: background 0.15s ease;
+}
+
+.launcher-error button:hover {
+  background: rgba(243, 139, 168, 0.3);
+}
+
+.form-error {
+  padding: 10px 12px;
+  background: rgba(243, 139, 168, 0.1);
+  border: 1px solid rgba(243, 139, 168, 0.3);
+  border-radius: var(--radius);
+  color: var(--red);
+  font-size: 12px;
+}

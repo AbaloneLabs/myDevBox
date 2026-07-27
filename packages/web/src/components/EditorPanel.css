@@ -1,0 +1,174 @@
+.editor-panel {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-primary);
+  overflow: hidden;
+  min-width: 0;
+}
+
+.editor-tabs {
+  display: flex;
+  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--border);
+  overflow-x: auto;
+  flex-shrink: 0;
+}
+
+.editor-tabs::-webkit-scrollbar {
+  height: 2px;
+}
+
+.editor-tab {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 10px 7px 14px;
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
+  border-right: 1px solid var(--border);
+  cursor: pointer;
+  font-size: 12px;
+  white-space: nowrap;
+  transition: all 0.1s ease;
+}
+
+.editor-tab:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+.editor-tab.active {
+  background: var(--bg-primary);
+  color: var(--text-primary);
+}
+
+.tab-name {
+  font-family: var(--font-mono);
+}
+
+.tab-close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  border-radius: 3px;
+  color: var(--text-muted);
+  opacity: 0;
+  transition: all 0.1s ease;
+}
+
+.editor-tab:hover .tab-close,
+.editor-tab.active .tab-close {
+  opacity: 1;
+}
+
+.tab-close:hover {
+  background: var(--bg-active);
+  color: var(--text-primary);
+}
+
+.editor-container {
+  flex: 1;
+  overflow: hidden;
+  min-height: 0;
+}
+
+.editor-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  text-align: center;
+  color: var(--text-muted);
+}
+
+.empty-editor-icon {
+  color: var(--bg-active);
+  margin-bottom: 16px;
+}
+
+.editor-empty .empty-title {
+  font-size: 14px;
+  color: var(--text-secondary);
+  margin-bottom: 6px;
+}
+
+.editor-empty .empty-hint {
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+/* ============ 더티 인디케이터 ============ */
+.tab-dirty-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent);
+  flex-shrink: 0;
+}
+
+/* ============ 에디터 상태 표시줄 ============ */
+.editor-status-bar {
+  display: flex;
+  align-items: center;
+  padding: 3px 12px;
+  background: var(--bg-secondary);
+  border-top: 1px solid var(--border);
+  font-size: 11px;
+  color: var(--text-muted);
+  flex-shrink: 0;
+  height: 22px;
+}
+
+.status-saving {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--text-secondary);
+}
+
+.status-saved {
+  color: var(--green);
+  font-weight: 500;
+}
+
+.status-dirty {
+  color: var(--yellow);
+}
+
+.status-clean {
+  font-family: var(--font-mono);
+  text-transform: lowercase;
+}
+
+.editor-run-btn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  margin-left: auto;
+  background: transparent;
+  color: var(--green);
+  border: 1px solid var(--green);
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s;
+  flex-shrink: 0;
+  align-self: center;
+  margin-right: 8px;
+}
+
+.editor-run-btn:hover:not(:disabled) {
+  background: var(--green);
+  color: var(--bg-primary);
+}
+
+.editor-run-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}

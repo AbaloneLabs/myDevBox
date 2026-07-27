@@ -1,0 +1,61 @@
+.terminal-panel {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: #11111b;
+  border-top: 1px solid #313244;
+}
+
+.terminal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 4px 12px;
+  background: #181825;
+  border-bottom: 1px solid #313244;
+  height: 32px;
+  flex-shrink: 0;
+}
+
+.terminal-title {
+  font-size: 11px;
+  font-weight: 600;
+  color: #a6adc8;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.terminal-actions {
+  display: flex;
+  gap: 4px;
+}
+
+.terminal-btn {
+  background: transparent;
+  border: 1px solid #313244;
+  color: #a6adc8;
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.terminal-btn:hover {
+  background: #313244;
+  color: #cdd6f4;
+}
+
+.terminal-container {
+  flex: 1;
+  overflow: hidden;
+  padding: 4px 8px;
+}
+
+.terminal-container .xterm {
+  height: 100%;
+}
+
+.terminal-container .xterm-viewport {
+  overflow-y: auto !important;
+}

@@ -1,0 +1,16 @@
+{
+  "name": "mydevbox",
+  "private": true,
+  "scripts": {
+    "dev": "pnpm -r --parallel run dev",
+    "build": "pnpm -r run build",
+    "dev:server": "pnpm --filter @mydevbox/server dev",
+    "dev:web": "pnpm --filter @mydevbox/web dev",
+    "db:generate": "pnpm --filter @mydevbox/server drizzle-kit generate",
+    "db:migrate": "pnpm --filter @mydevbox/server drizzle-kit migrate",
+    "db:push": "pnpm --filter @mydevbox/server drizzle-kit push"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

@@ -1,0 +1,12 @@
+node_modules
+dist
+.git
+*.md
+plans
+opensource
+docs
+AGENTS.md
+*.log
+.env
+.env.*
+!.env.example

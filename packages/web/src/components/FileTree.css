@@ -1,0 +1,165 @@
+.file-tree {
+  width: 220px;
+  min-width: 220px;
+  background: var(--bg-secondary);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.file-tree-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 8px 6px 12px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-muted);
+  border-bottom: 1px solid var(--border);
+}
+
+.tree-refresh-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border: none;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: background 0.1s ease, color 0.1s ease;
+}
+
+.tree-refresh-btn:hover:not(:disabled) {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+.tree-refresh-btn:disabled {
+  cursor: default;
+  opacity: 0.6;
+}
+
+.file-tree-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 4px 0;
+}
+
+.tree-node {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  width: 100%;
+  padding: 3px 8px;
+  font-size: 12.5px;
+  color: var(--text-secondary);
+  text-align: left;
+  transition: background 0.1s ease;
+}
+
+.tree-node:hover {
+  background: var(--bg-hover);
+}
+
+.tree-node.file.active {
+  background: var(--bg-active);
+  color: var(--text-primary);
+}
+
+.tree-chevron {
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+
+.tree-icon {
+  flex-shrink: 0;
+}
+
+.tree-icon.folder {
+  color: var(--accent);
+}
+
+.tree-icon.file {
+  color: var(--text-muted);
+}
+
+.tree-label {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tree-git-status {
+  margin-left: auto;
+  font-size: 10px;
+  font-family: var(--font-mono);
+  font-weight: 700;
+  padding: 0 2px;
+}
+
+.tree-git-status.modified {
+  color: var(--yellow);
+}
+
+.tree-git-status.staged {
+  color: var(--green);
+}
+
+.tree-git-status.untracked {
+  color: var(--red);
+}
+
+/* ============ 빈 상태 ============ */
+.file-tree-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 40px 16px;
+  color: var(--text-muted);
+}
+
+.file-tree-loading p {
+  font-size: 12px;
+}
+
+.spin {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.file-tree-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 16px;
+  text-align: center;
+  color: var(--text-muted);
+}
+
+.empty-folder-icon {
+  color: var(--bg-active);
+  margin-bottom: 12px;
+}
+
+.file-tree-empty p {
+  font-size: 12px;
+}
+
+.empty-hint {
+  font-size: 11px !important;
+  margin-top: 4px;
+  line-height: 1.4;
+}

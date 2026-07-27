@@ -82,9 +82,7 @@ export function ProjectLauncher({ onOpenDashboard }: { onOpenDashboard: () => vo
             <FolderOpenIcon size={48} className="empty-icon" />
             <p className="empty-title">프로젝트가 없습니다</p>
             <p className="empty-desc">
-              VM의 <code>~/repos/</code> 폴더에 있는 프로젝트를 등록하세요.
-              <br />
-              git 원격 저장소 연결은 선택 사항입니다.
+              프로젝트 이름을 입력해 생성하세요. git 원격 저장소 연결은 선택 사항입니다.
             </p>
           </div>
         ) : (
@@ -195,7 +193,6 @@ function AddProjectForm({
   const createProject = useStore((s) => s.createProject)
   const loading = useStore((s) => s.loading)
   const [name, setName] = useState('')
-  const [path, setPath] = useState('~/repos/')
   const [description, setDescription] = useState('')
   const [gitEnabled, setGitEnabled] = useState(false)
   const [remoteUrl, setRemoteUrl] = useState('')
@@ -204,13 +201,12 @@ function AddProjectForm({
   const [formError, setFormError] = useState<string | null>(null)
 
   const handleSubmit = async () => {
-    if (!name.trim() || !path.trim()) return
+    if (!name.trim()) return
 
     setFormError(null)
     try {
       const project = await createProject({
         name: name.trim(),
-        path: path.trim(),
         description: description.trim() || undefined,
         gitConfig:
           gitEnabled && remoteUrl.trim()
@@ -238,21 +234,11 @@ function AddProjectForm({
           type="text"
           value={name}
           onChange={(e) => setName(e.target.value)}
-          placeholder="my-project"
+          placeholder="myapp"
           autoFocus
           disabled={loading}
         />
-      </div>
-      <div className="form-row">
-        <label>경로</label>
-        <input
-          type="text"
-          value={path}
-          onChange={(e) => setPath(e.target.value)}
-          placeholder="~/repos/my-project"
-          className="mono-input"
-          disabled={loading}
-        />
+        <span className="form-hint">영문과 숫자만 사용할 수 있습니다 (예: myapp)</span>
       </div>
       <div className="form-row">
         <label>설명 (선택)</label>
@@ -337,7 +323,7 @@ function AddProjectForm({
         <button
           className="form-submit-btn"
           onClick={handleSubmit}
-          disabled={!name.trim() || !path.trim() || loading}
+          disabled={!name.trim() || loading}
         >
           {loading ? (
             <>

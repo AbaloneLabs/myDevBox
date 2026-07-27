@@ -9,6 +9,7 @@ import { expandTilde, validateProjectPath, isGitRepo } from './path-service.js'
 import { wikiService } from './wiki-service.js'
 import { bootstrapWiki } from './wiki-maintenance.js'
 import { gitSync } from './git-sync.js'
+import { config } from '../config.js'
 import type { Project, ScannedDir, ProjectStatus } from '@mydevbox/shared'
 import type { CreateProjectInput, UpdateProjectInput } from '@mydevbox/shared'
 
@@ -83,7 +84,8 @@ export class ProjectService {
    * - 토큰은 AES-256-GCM 암호화 후 DB 저장
    */
   async create(input: CreateProjectInput): Promise<Project> {
-    const resolvedPath = path.resolve(expandTilde(input.path))
+    // 프로젝트 경로는 reposDir/<name> 으로 자동 파생 (사용자가 경로 입력 X)
+    const resolvedPath = path.resolve(expandTilde(config.reposDir), input.name)
 
     // 중복 경로 확인
     const existing = await db.select().from(projects).where(eq(projects.path, resolvedPath))
@@ -127,13 +129,8 @@ export class ProjectService {
         throw err
       }
     } else {
-      // 로컬 프로젝트: 경로 존재 확인
-      const validation = validateProjectPath(resolvedPath)
-      if (!validation.valid) {
-        const err = new Error(validation.error!)
-        ;(err as Error & { statusCode?: number }).statusCode = 400
-        throw err
-      }
+      // 로컬 프로젝트: repos/<name> 디렉토리 자동 생성
+      fs.mkdirSync(resolvedPath, { recursive: true })
     }
 
     // DB에 저장
@@ -172,9 +169,6 @@ export class ProjectService {
 
     if (input.name !== undefined) updates.name = input.name
     if (input.description !== undefined) updates.description = input.description ?? null
-    if (input.path !== undefined) {
-      updates.path = path.resolve(expandTilde(input.path))
-    }
     if (input.gitConfig !== undefined) {
       if (input.gitConfig === undefined) {
         // gitConfig 제거

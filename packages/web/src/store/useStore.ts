@@ -40,7 +40,6 @@ interface AppState {
   closeProject: () => void
   createProject: (input: {
     name: string
-    path: string
     description?: string
     gitConfig?: {
       remoteUrl: string

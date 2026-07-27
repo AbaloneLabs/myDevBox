@@ -59,7 +59,6 @@ export const api = {
 
   async createProject(input: {
     name: string
-    path: string
     description?: string
     gitConfig?: {
       remoteUrl: string

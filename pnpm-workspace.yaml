@@ -1,7 +1,11 @@
 packages:
   - 'packages/*'
 
+# pnpm 11 공급망 정책: "방금 퍼블리시된 패키지" 차단을 끈다 (최신 biome 등 설치 허용).
+minimumReleaseAge: 0
+
 onlyBuiltDependencies:
   - esbuild
   - node-pty
+  - simple-git-hooks
   - '@vscode/ripgrep'

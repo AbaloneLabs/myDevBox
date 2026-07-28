@@ -1,6 +1,7 @@
 {
   "name": "mydevbox",
   "private": true,
+  "packageManager": "pnpm@10.18.0",
   "scripts": {
     "dev": "pnpm -r --parallel run dev",
     "build": "pnpm -r run build",
@@ -8,9 +9,24 @@
     "dev:web": "pnpm --filter @mydevbox/web dev",
     "db:generate": "pnpm --filter @mydevbox/server drizzle-kit generate",
     "db:migrate": "pnpm --filter @mydevbox/server drizzle-kit migrate",
-    "db:push": "pnpm --filter @mydevbox/server drizzle-kit push"
+    "db:push": "pnpm --filter @mydevbox/server drizzle-kit push",
+    "check": "biome check .",
+    "format": "biome format --write .",
+    "lint:fix": "biome lint --write .",
+    "prepare": "simple-git-hooks"
   },
   "engines": {
     "node": ">=20"
+  },
+  "lint-staged": {
+    "*.{ts,tsx,js,cjs,mjs,json}": "biome check --write"
+  },
+  "simple-git-hooks": {
+    "pre-commit": "pnpm exec lint-staged"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.5.6",
+    "lint-staged": "^17.2.0",
+    "simple-git-hooks": "^2.13.1"
   }
 }

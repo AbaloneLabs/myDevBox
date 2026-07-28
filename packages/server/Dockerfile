@@ -6,7 +6,7 @@
 FROM node:22-alpine AS builder
 # git: simple-git용, python3/make/g++: node-pty 네이티브 컴파일용
 RUN apk add --no-cache git python3 make g++
-RUN corepack enable && corepack prepare pnpm@latest --activate
+RUN corepack enable && corepack prepare pnpm@10.18.0 --activate
 WORKDIR /app
 
 # 의존성 파일만 먼저 복사 (캐시 최적화)

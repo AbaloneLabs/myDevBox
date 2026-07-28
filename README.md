@@ -124,4 +124,4 @@ mydevbox/
 
 ## License
 
-Private.
+Licensed under the [Apache License, Version 2.0](LICENSE). Unless required by applicable law or agreed to in writing, this software is distributed on an "AS IS" basis, without warranties or conditions of any kind.

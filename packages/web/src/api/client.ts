@@ -44,7 +44,9 @@ async function request<T>(
   const body: ApiResponse<T> = await res.json()
 
   if (!body.success) {
-    throw new Error(body.error ?? 'Unknown error')
+    const issues = (body as ApiResponse<T> & { details?: Array<{ message?: string }> }).details
+    const detail = issues?.map((i) => i.message).filter(Boolean).join(' · ')
+    throw new Error(detail ? `${body.error ?? 'Error'} — ${detail}` : (body.error ?? 'Unknown error'))
   }
 
   return body.data as T

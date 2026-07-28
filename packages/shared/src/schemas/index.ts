@@ -2,7 +2,7 @@ import { z } from 'zod'
 
 // ============ 프로젝트 ============
 export const createProjectSchema = z.object({
-  name: z.string().min(1).max(100).regex(/^[A-Za-z0-9]+$/, '프로젝트 이름은 영문과 숫자만 사용할 수 있습니다'),
+  name: z.string().min(1).max(100).regex(/^[A-Za-z0-9][A-Za-z0-9._-]*$/, '프로젝트 이름은 영문/숫자로 시작해야 하며, 영문·숫자·대시(-)·밑줄(_)·점(.)만 사용할 수 있습니다'),
   description: z.string().optional(),
   gitConfig: z.object({
     remoteUrl: z.string().url(),

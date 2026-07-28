@@ -234,11 +234,11 @@ function AddProjectForm({
           type="text"
           value={name}
           onChange={(e) => setName(e.target.value)}
-          placeholder="myapp"
+          placeholder="my-app"
           autoFocus
           disabled={loading}
         />
-        <span className="form-hint">영문과 숫자만 사용할 수 있습니다 (예: myapp)</span>
+        <span className="form-hint">영문·숫자·대시·밑줄·점 (영문/숫자로 시작). 예: my-app, web_mario</span>
       </div>
       <div className="form-row">
         <label>설명 (선택)</label>

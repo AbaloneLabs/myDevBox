@@ -76,6 +76,7 @@ export interface ModelConfig {
   maxTokens?: number
   apiKey: string
   baseUrl?: string
+  extraHeaders?: Record<string, string>
 }
 
 // ============ Agent Context ============

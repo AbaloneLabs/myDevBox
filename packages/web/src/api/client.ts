@@ -12,6 +12,9 @@ import type {
   ChatMessage,
   AgentConfig,
   ModelInfo,
+  ProviderCredential,
+  ProviderDescriptorPublic,
+  SaveProviderInput,
   Task,
   Plan,
   Doc,
@@ -50,6 +53,27 @@ async function request<T>(
   }
 
   return body.data as T
+}
+
+// ============ OAuth (구독형 프로바이더 연결) ============
+
+export type OAuthFlowType = 'device-code' | 'pkce-auth-code'
+
+export interface OAuthProviderInfo {
+  provider: string
+  displayName: string
+  flowType: OAuthFlowType
+}
+
+// startOAuth 반환 — device-code 흐름은 사용자 코드/검증 URI/폴링 간격,
+// pkce 흐름은 인증 URL을 반환한다.
+export type OAuthStartResult =
+  | { flowType: 'device-code'; userCode: string; verificationUri: string; interval: number }
+  | { flowType: 'pkce'; authorizeUrl: string }
+
+export interface OAuthPollResult {
+  status: 'pending' | 'success' | 'error'
+  error?: string
 }
 
 // ============ Projects API ============
@@ -476,5 +500,59 @@ export const api = {
     await request<null>(`/projects/${projectId}/run-presets/${presetId}`, {
       method: 'DELETE',
     })
+  },
+
+  // ============ LLM Providers API (서버-레벨 자격증명) ============
+
+  async listAvailableProviders(): Promise<ProviderDescriptorPublic[]> {
+    return request<ProviderDescriptorPublic[]>('/providers/available')
+  },
+
+  async listProviders(): Promise<ProviderCredential[]> {
+    return request<ProviderCredential[]>('/providers')
+  },
+
+  async saveProvider(input: SaveProviderInput): Promise<ProviderCredential> {
+    return request<ProviderCredential>('/providers', {
+      method: 'POST',
+      body: JSON.stringify(input),
+    })
+  },
+
+  async setDefaultProvider(id: string): Promise<void> {
+    await request<null>(`/providers/${id}/default`, {
+      method: 'PATCH',
+    })
+  },
+
+  async deleteProvider(id: string): Promise<void> {
+    await request<null>(`/providers/${id}`, {
+      method: 'DELETE',
+    })
+  },
+
+  async discoverModels(id: string): Promise<string[]> {
+    return request<string[]>(`/providers/${id}/models`)
+  },
+  // ============ OAuth (구독형 프로바이더 연결) ============
+
+  async listOAuthProviders(): Promise<OAuthProviderInfo[]> {
+    return request<OAuthProviderInfo[]>('/providers/oauth/available')
+  },
+
+  // bodyless POST — Content-Type 미설정 (request 헬퍼가 body === undefined 처리)
+  async startOAuth(provider: string): Promise<OAuthStartResult> {
+    return request<OAuthStartResult>(
+      `/providers/oauth/${encodeURIComponent(provider)}/start`,
+      { method: 'POST' },
+    )
+  },
+
+  // bodyless POST — Content-Type 미설정 (device-code 전용 폴링)
+  async pollOAuth(provider: string): Promise<OAuthPollResult> {
+    return request<OAuthPollResult>(
+      `/providers/oauth/${encodeURIComponent(provider)}/poll`,
+      { method: 'POST' },
+    )
   },
 }

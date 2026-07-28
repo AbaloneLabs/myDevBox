@@ -11,12 +11,11 @@ import type { WebSocket } from 'ws'
 import type { ClientMessage, ServerMessage } from '@mydevbox/shared'
 import { connectionManager } from './connection.js'
 import { sessionRegistry, buildSystemPrompt, getProvider } from '../agent/index.js'
-import { PROVIDER_BY_ID, resolveBaseUrl } from '../agent/llm/registry.js'
+import { getDefaultModelConfig } from '../agent/model-config.js'
 import { createProjectTools, createDbTodoTools, createDbWikiTools } from '../agent/tools/index.js'
 import type { AgentEvent, AgentLoopConfig, Message, ModelConfig } from '../agent/types.js'
 import { db } from '../db/connection.js'
-import { projects, agentConfigs, chatMessages } from '../db/schema.js'
-import { decrypt } from '../db/crypto.js'
+import { projects, chatMessages } from '../db/schema.js'
 import { wikiService } from '../services/wiki-service.js'
 import { eq } from 'drizzle-orm'
 import { logger } from '../logger.js'
@@ -74,47 +73,19 @@ async function handleSendMessage(
       return
     }
 
-    // 2. Load agent config
-    const [configRow] = await db.select().from(agentConfigs).where(eq(agentConfigs.projectId, projectId)).limit(1)
-
-    const provider = (configRow?.provider as string) ?? 'anthropic'
-    const model = configRow?.model ?? 'claude-sonnet-4-20250514'
-    const temperature = configRow?.temperature ?? 0.7
-    const maxTokens = configRow?.maxTokens ?? 8192
-
-    // Decrypt API key
-    let apiKey = ''
-    if (configRow?.apiKeyEncrypted) {
-      try {
-        apiKey = decrypt(configRow.apiKeyEncrypted)
-      } catch {
-        sendError(ws, 'Failed to decrypt API key. Please reconfigure your agent settings.')
-        return
-      }
-    }
-
-    if (!apiKey) {
-      sendError(ws, 'No API key configured. Please set your API key in the agent settings.')
+    // 2. 서버-레벨 기본 프로바이더 자격증명 로드
+    const modelConfig = await getDefaultModelConfig()
+    if (!modelConfig) {
+      sendError(ws, 'LLM 프로바이더가 설정되지 않았습니다. 설정에서 프로바이더를 추가하세요.')
       return
     }
 
-    // 3. Save user message to DB
+    // 3. 사용자 메시지 DB 저장
     await db.insert(chatMessages).values({
       projectId,
       role: 'user',
       content,
     })
-
-    // 4. Build model config
-    const descriptor = PROVIDER_BY_ID[provider]
-    const modelConfig: ModelConfig = {
-      provider,
-      model,
-      temperature,
-      maxTokens,
-      apiKey,
-      baseUrl: descriptor ? resolveBaseUrl(descriptor) : undefined,
-    }
 
     // 5. Create tools
     const fileTools = createProjectTools(projectRow.path)

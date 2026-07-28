@@ -25,7 +25,7 @@ export class OpenAIProvider implements LLMProvider {
     tools?: ToolDefinition[],
     signal?: AbortSignal,
   ): AsyncIterable<StreamEvent> {
-    const client = new OpenAI({ apiKey: model.apiKey, baseURL: model.baseUrl })
+    const client = new OpenAI({ apiKey: model.apiKey, baseURL: model.baseUrl, defaultHeaders: model.extraHeaders })
 
     // Convert messages to OpenAI format
     const openaiMessages = this.convertMessages(messages, systemPrompt)

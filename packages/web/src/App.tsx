@@ -7,25 +7,32 @@ import { EditorPanel } from './components/EditorPanel'
 import { ChatPanel } from './components/ChatPanel'
 import { SidePanel } from './components/SidePanel'
 import { TerminalPanel } from './components/Terminal'
+import { ProviderSettings } from './components/ProviderSettings'
 import './App.css'
 
 export default function App() {
   const view = useStore((s) => s.view)
   const setView = useStore((s) => s.setView)
+
+  return (
+    <>
+      {view === 'dashboard' ? (
+        <GlobalDashboard onBack={() => setView('launcher')} />
+      ) : view === 'launcher' ? (
+        <ProjectLauncher onOpenDashboard={() => setView('dashboard')} />
+      ) : (
+        <ProjectWorkspace />
+      )}
+      {/* LLM 프로바이더 설정 — 모든 뷰 위에 오버레이 */}
+      <ProviderSettings />
+    </>
+  )
+}
+
+function ProjectWorkspace() {
   const workMode = useStore((s) => s.workMode)
   const terminalVisible = useStore((s) => s.terminalVisible)
   const activeProjectId = useStore((s) => s.activeProjectId)
-
-  // 글로벌 대시보드 (크로스프로젝트, 프로젝트 미선택)
-  if (view === 'dashboard') {
-    return <GlobalDashboard onBack={() => setView('launcher')} />
-  }
-
-  // 프로젝트가 선택되지 않은 경우 - 프로젝트 런처 표시
-  if (view === 'launcher') {
-    return <ProjectLauncher onOpenDashboard={() => setView('dashboard')} />
-  }
-
 
   // view === 'project' implies a project is open; guard for type narrowing.
   if (!activeProjectId) return null

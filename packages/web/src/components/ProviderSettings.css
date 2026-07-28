@@ -1,0 +1,451 @@
+/* ============ 오버레이 / 모달 ============ */
+
+.ps-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(2px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.ps-modal {
+  width: 100%;
+  max-width: 640px;
+  max-height: calc(100vh - 48px);
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.5);
+}
+
+/* ============ 헤더 ============ */
+
+.ps-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.ps-header h2 {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.ps-close-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+  border-radius: var(--radius);
+  color: var(--text-muted);
+  transition: all 0.15s ease;
+}
+
+.ps-close-btn:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+/* ============ 본문 ============ */
+
+.ps-body {
+  padding: 20px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.ps-section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.ps-section-title {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-muted);
+}
+
+/* ============ 설정된 프로바이더 목록 ============ */
+
+.ps-loading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+.ps-empty {
+  padding: 16px;
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 12.5px;
+  background: var(--bg-tertiary);
+  border: 1px dashed var(--border);
+  border-radius: var(--radius);
+}
+
+.ps-provider-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.ps-provider-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.ps-provider-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.ps-provider-name {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.ps-default-badge {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  padding: 1px 6px;
+  border-radius: 4px;
+  background: rgba(166, 227, 161, 0.15);
+  color: var(--green);
+  border: 1px solid rgba(166, 227, 161, 0.3);
+}
+
+.ps-provider-meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11.5px;
+  color: var(--text-secondary);
+  flex-wrap: wrap;
+}
+
+.ps-dot {
+  color: var(--text-muted);
+}
+
+.ps-key-ok {
+  color: var(--green);
+}
+
+.ps-key-missing {
+  color: var(--red);
+}
+
+.ps-provider-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.ps-action-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 10px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 11px;
+  font-weight: 500;
+  white-space: nowrap;
+  transition: all 0.15s ease;
+}
+
+.ps-action-btn:hover:not(:disabled) {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.ps-action-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.ps-action-btn.danger:hover:not(:disabled) {
+  border-color: var(--red);
+  color: var(--red);
+}
+
+/* ============ 폼 ============ */
+
+.ps-form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.ps-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.ps-field label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-muted);
+}
+
+.ps-input,
+.ps-select {
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 8px 12px;
+  font-size: 13px;
+  color: var(--text-primary);
+  outline: none;
+  transition: border-color 0.15s ease;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.ps-input:focus,
+.ps-select:focus {
+  border-color: var(--accent);
+}
+
+.ps-mono {
+  font-family: var(--font-mono);
+  font-size: 12px;
+}
+
+.ps-docs-link {
+  font-size: 11px;
+  color: var(--accent);
+  text-decoration: none;
+  align-self: flex-start;
+}
+
+.ps-docs-link:hover {
+  text-decoration: underline;
+}
+
+.ps-hint {
+  font-size: 11px;
+  color: var(--text-muted);
+  line-height: 1.4;
+}
+
+.ps-model-tools {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.ps-discover-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 10px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 11px;
+  font-weight: 500;
+  transition: all 0.15s ease;
+}
+
+.ps-discover-btn:hover:not(:disabled) {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.ps-discover-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.ps-model-select {
+  margin-top: 4px;
+}
+
+.ps-checkbox-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12.5px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  text-transform: none;
+  letter-spacing: normal;
+  font-weight: 400;
+}
+
+.ps-checkbox-row input {
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+
+/* ============ 에러 ============ */
+
+.ps-error {
+  margin: 12px 20px 0;
+  padding: 10px 12px;
+  background: rgba(243, 139, 168, 0.1);
+  border: 1px solid rgba(243, 139, 168, 0.3);
+  border-radius: var(--radius);
+  color: var(--red);
+  font-size: 12px;
+}
+
+/* ============ 푸터 ============ */
+
+.ps-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 14px 20px;
+  border-top: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.ps-cancel-btn {
+  padding: 8px 16px;
+  border-radius: var(--radius);
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 500;
+  transition: all 0.15s ease;
+}
+
+.ps-cancel-btn:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+.ps-save-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border-radius: var(--radius);
+  background: var(--accent);
+  color: var(--bg-tertiary);
+  font-size: 12px;
+  font-weight: 600;
+  transition: all 0.15s ease;
+}
+
+.ps-save-btn:hover:not(:disabled) {
+  background: var(--accent-hover);
+}
+
+.ps-save-btn:disabled {
+  background: var(--bg-hover);
+  color: var(--text-muted);
+  cursor: not-allowed;
+}
+
+/* ============ 로딩 스피너 ============ */
+
+.spin {
+  animation: ps-spin 1s linear infinite;
+}
+
+@keyframes ps-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* ============ OAuth 로그인 ============ */
+
+.ps-oauth-device-card,
+.ps-oauth-pkce-card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.ps-oauth-step {
+  margin: 0;
+  font-size: 12.5px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+.ps-oauth-verify-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--accent);
+  text-decoration: none;
+  word-break: break-all;
+}
+
+.ps-oauth-verify-link:hover {
+  text-decoration: underline;
+}
+
+.ps-oauth-code-box {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 16px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.ps-oauth-code {
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: 4px;
+  color: var(--text-primary);
+}
+
+.ps-oauth-pending {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-muted);
+  font-size: 12px;
+}

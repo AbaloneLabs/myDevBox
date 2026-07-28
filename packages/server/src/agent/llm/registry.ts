@@ -157,6 +157,32 @@ export const PROVIDERS: readonly ProviderDescriptor[] = [
     authFieldLabel: 'NVIDIA API Key',
     supportsDiscovery: true,
   },
+  {
+    id: 'zai',
+    displayName: 'Z.AI (Zhipu GLM)',
+    category: 'openai-compat',
+    apiShape: 'openai-completions',
+    defaultBaseUrl: 'https://api.z.ai/api/paas/v4',
+    authFieldLabel: 'Z.AI API Key',
+    supportsDiscovery: true,
+  },
+  {
+    id: 'kimi',
+    displayName: 'Kimi (Moonshot)',
+    category: 'openai-compat',
+    apiShape: 'openai-completions',
+    defaultBaseUrl: 'https://api.moonshot.cn/v1',
+    authFieldLabel: 'Moonshot API Key',
+    supportsDiscovery: true,
+  },
+  {
+    id: 'llamacpp',
+    displayName: 'llama.cpp (local)',
+    category: 'openai-compat',
+    apiShape: 'openai-completions',
+    defaultBaseUrl: 'http://localhost:8080/v1',
+    supportsDiscovery: true,
+  },
 
   // --- Self-hosted (OpenAI-compat, 로컬/사용자 엔드포인트) ---
   {

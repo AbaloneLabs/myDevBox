@@ -16,8 +16,7 @@
 import { simpleGit } from 'simple-git'
 import { eq } from 'drizzle-orm'
 import { db } from '../db/connection.js'
-import { projects, agentConfigs, syncNeeded } from '../db/schema.js'
-import { decrypt } from '../db/crypto.js'
+import { projects, syncNeeded } from '../db/schema.js'
 import { expandTilde } from './path-service.js'
 import { wikiService } from './wiki-service.js'
 import { logger } from '../logger.js'
@@ -25,7 +24,7 @@ import {
   runAgentLoop, getProvider, buildSystemPrompt,
 } from '../agent/index.js'
 import { createReadOnlyTools, createDbWikiTools } from '../agent/tools/index.js'
-import { PROVIDER_BY_ID, resolveBaseUrl } from '../agent/llm/registry.js'
+import { getDefaultModelConfig } from '../agent/model-config.js'
 import type {
   AgentContext, AgentLoopConfig, AgentTool, ModelConfig, AgentEvent,
 } from '../agent/types.js'
@@ -44,22 +43,6 @@ async function getProject(projectId: string): Promise<{ id: string; name: string
   }
 }
 
-/** Load + decrypt the agent model config. Returns null if no usable API key. */
-async function getMaintenanceProvider(projectId: string): Promise<ModelConfig | null> {
-  const [configRow] = await db.select().from(agentConfigs).where(eq(agentConfigs.projectId, projectId))
-  const provider = (configRow?.provider as string) ?? 'anthropic'
-  const model = configRow?.model ?? 'claude-sonnet-4-20250514'
-  const temperature = configRow?.temperature ?? 0.7
-  const maxTokens = configRow?.maxTokens ?? 8192
-
-  let apiKey = ''
-  if (configRow?.apiKeyEncrypted) {
-    try { apiKey = decrypt(configRow.apiKeyEncrypted) } catch { apiKey = '' }
-  }
-  if (!apiKey) return null
-  const descriptor = PROVIDER_BY_ID[provider]
-  return { provider, model, temperature, maxTokens, apiKey, baseUrl: descriptor ? resolveBaseUrl(descriptor) : undefined }
-}
 
 /** Restricted, side-effect-free (except wiki) tool set for background runs. */
 function buildMaintenanceTools(projectId: string, projectPath: string): AgentTool[] {
@@ -75,7 +58,7 @@ export async function runHeadlessWikiAgent(
   prompt: string,
   maxTurns: number,
 ): Promise<void> {
-  const modelConfig = await getMaintenanceProvider(projectId)
+  const modelConfig = await getDefaultModelConfig()
   if (!modelConfig) {
     logger.warn({ projectId }, 'wiki maintenance skipped: no API key configured')
     return

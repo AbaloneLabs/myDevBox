@@ -87,6 +87,17 @@ export const updateAgentConfigSchema = z.object({
 
 export type UpdateAgentConfigInput = z.infer<typeof updateAgentConfigSchema>
 
+// ============ LLM 프로바이더 (서버-레벨) ============
+export const saveProviderSchema = z.object({
+  provider: z.string().min(1),
+  apiKey: z.string().optional(),
+  baseUrlOverride: z.string().optional(),
+  defaultModel: z.string().min(1),
+  isDefault: z.boolean().optional(),
+})
+
+export type SaveProviderInput = z.infer<typeof saveProviderSchema>
+
 // ============ Tasks ============
 export const createTaskSchema = z.object({
   title: z.string().min(1).max(200),

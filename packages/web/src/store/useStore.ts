@@ -6,6 +6,9 @@ import type {
   FileNode,
   Task,
   Plan,
+  ProviderCredential,
+  ProviderDescriptorPublic,
+  SaveProviderInput,
   Doc,
   ChatMessage,
   GitInfo,
@@ -19,7 +22,7 @@ import type {
   WikiSearchHit,
   WikiSyncState,
 } from '../types'
-import { api } from '../api/client'
+import { api, type OAuthProviderInfo } from '../api/client'
 import { wsClient } from '../api/ws-client'
 
 interface AppState {
@@ -31,6 +34,31 @@ interface AppState {
   // ============ 앱 뷰 ============
   view: 'launcher' | 'dashboard' | 'project'
   setView: (view: 'launcher' | 'dashboard' | 'project') => void
+
+  // ============ LLM 프로바이더 (서버-레벨 설정) ============
+  availableProviders: ProviderDescriptorPublic[]
+  providers: ProviderCredential[]
+  providerSettingsOpen: boolean
+  providersLoading: boolean
+  openProviderSettings: () => void
+  closeProviderSettings: () => void
+  loadAvailableProviders: () => Promise<void>
+  loadProviders: () => Promise<void>
+  saveProvider: (input: SaveProviderInput) => Promise<void>
+  setDefaultProvider: (id: string) => Promise<void>
+  deleteProvider: (id: string) => Promise<void>
+  oauthProviders: OAuthProviderInfo[]
+  oauthPending: null | {
+    provider: string
+    userCode?: string
+    verificationUri?: string
+    interval?: number
+    flowType: string
+  }
+  loadOAuthProviders: () => Promise<void>
+  startOAuthLogin: (provider: string) => Promise<void>
+  pollOAuthOnce: (provider: string) => Promise<void>
+  cancelOAuthLogin: () => void
 
   // ============ 프로젝트 관리 ============
   projects: Project[]
@@ -213,6 +241,17 @@ const emptyWorkspace = {
   runPresets: [] as RunPreset[],
 }
 
+// device-code OAuth 폴링 핸들 — zustand 상태가 아닌 모듈 스코프에서 관리.
+// 성공/실패/취소 또는 오버레이 닫힘 시 반드시 clearOAuthPoll()로 정리한다.
+let oauthPollHandle: ReturnType<typeof setInterval> | null = null
+
+function clearOAuthPoll(): void {
+  if (oauthPollHandle !== null) {
+    clearInterval(oauthPollHandle)
+    oauthPollHandle = null
+  }
+}
+
 export const useStore = create<AppState>((set) => ({
   // ============ 로딩 / 에러 ============
   loading: false,
@@ -221,6 +260,134 @@ export const useStore = create<AppState>((set) => ({
 
   view: 'launcher',
   setView: (view) => set({ view }),
+
+  // ============ LLM 프로바이더 (서버-레벨 설정) ============
+  availableProviders: [],
+  providers: [],
+  providerSettingsOpen: false,
+  providersLoading: false,
+  oauthProviders: [],
+  oauthPending: null,
+
+  openProviderSettings: () => {
+    set({ providerSettingsOpen: true })
+    void useStore.getState().loadAvailableProviders()
+    void useStore.getState().loadProviders()
+    void useStore.getState().loadOAuthProviders()
+  },
+
+  closeProviderSettings: () => set({ providerSettingsOpen: false }),
+
+  loadAvailableProviders: async () => {
+    try {
+      const available = await api.listAvailableProviders()
+      set({ availableProviders: available })
+    } catch {
+      // 조용히 실패
+    }
+  },
+
+  loadProviders: async () => {
+    set({ providersLoading: true })
+    try {
+      const providers = await api.listProviders()
+      set({ providers, providersLoading: false })
+    } catch {
+      set({ providersLoading: false })
+    }
+  },
+
+  saveProvider: async (input) => {
+    try {
+      await api.saveProvider(input)
+      await useStore.getState().loadProviders()
+    } catch (e) {
+      set({ error: e instanceof Error ? e.message : '프로바이더 저장 중 오류가 발생했습니다' })
+      throw e
+    }
+  },
+
+  setDefaultProvider: async (id) => {
+    try {
+      await api.setDefaultProvider(id)
+      await useStore.getState().loadProviders()
+    } catch (e) {
+      set({ error: e instanceof Error ? e.message : '기본 프로바이더 설정 중 오류가 발생했습니다' })
+      throw e
+    }
+  },
+
+  deleteProvider: async (id) => {
+    try {
+      await api.deleteProvider(id)
+      await useStore.getState().loadProviders()
+    } catch (e) {
+      set({ error: e instanceof Error ? e.message : '프로바이더 삭제 중 오류가 발생했습니다' })
+      throw e
+    }
+  },
+  loadOAuthProviders: async () => {
+    try {
+      const oauthProviders = await api.listOAuthProviders()
+      set({ oauthProviders })
+    } catch {
+      // 조용히 실패
+    }
+  },
+
+  startOAuthLogin: async (provider) => {
+    // 기존 진행 중인 폴링 정리
+    clearOAuthPoll()
+    set({ oauthPending: null })
+    try {
+      const result = await api.startOAuth(provider)
+      if (result.flowType === 'device-code') {
+        set({
+          oauthPending: {
+            provider,
+            flowType: 'device-code',
+            userCode: result.userCode,
+            verificationUri: result.verificationUri,
+            interval: result.interval,
+          },
+        })
+        // device-code: 반환된 interval(초) 주기로 폴링 시작
+        const intervalMs = Math.max(result.interval, 1) * 1000
+        oauthPollHandle = setInterval(() => {
+          void useStore.getState().pollOAuthOnce(provider)
+        }, intervalMs)
+      } else {
+        // pkce: 브라우저 창에서 인증 진행
+        window.open(result.authorizeUrl, '_blank', 'noopener,noreferrer')
+        set({ oauthPending: { provider, flowType: 'pkce' } })
+      }
+    } catch (e) {
+      set({ error: e instanceof Error ? e.message : 'OAuth 로그인 시작 중 오류가 발생했습니다' })
+    }
+  },
+
+  pollOAuthOnce: async (provider) => {
+    try {
+      const result = await api.pollOAuth(provider)
+      if (result.status === 'success') {
+        clearOAuthPoll()
+        set({ oauthPending: null })
+        await useStore.getState().loadProviders()
+      } else if (result.status === 'error') {
+        clearOAuthPoll()
+        set({ oauthPending: null, error: result.error ?? 'OAuth 인증에 실패했습니다' })
+      }
+      // pending → oauthPending 유지, 호출자가 다시 폴링
+    } catch (e) {
+      clearOAuthPoll()
+      set({ oauthPending: null, error: e instanceof Error ? e.message : 'OAuth 폴링 중 오류가 발생했습니다' })
+    }
+  },
+
+  cancelOAuthLogin: () => {
+    clearOAuthPoll()
+    set({ oauthPending: null })
+  },
 
   // ============ 프로젝트 관리 ============
   projects: [],

@@ -21,6 +21,7 @@ export function ProjectLauncher({ onOpenDashboard }: { onOpenDashboard: () => vo
   const removeProject = useStore((s) => s.removeProject)
   const loading = useStore((s) => s.loading)
   const error = useStore((s) => s.error)
+  const openProviderSettings = useStore((s) => s.openProviderSettings)
   const [showAddForm, setShowAddForm] = useState(false)
 
   // 마운트 시 프로젝트 목록 로드
@@ -38,9 +39,14 @@ export function ProjectLauncher({ onOpenDashboard }: { onOpenDashboard: () => vo
         <p className="launcher-tagline">
           샌드박스 내에서 AI 에이전트와 함께 개발하는 환경
         </p>
-        <button className="launcher-dashboard-btn" onClick={onOpenDashboard}>
-          대시보드
-        </button>
+        <div className="launcher-header-actions">
+          <button className="launcher-dashboard-btn" onClick={onOpenDashboard}>
+            대시보드
+          </button>
+          <button className="launcher-settings-btn" onClick={openProviderSettings}>
+            설정
+          </button>
+        </div>
       </div>
 
       <div className="launcher-content">

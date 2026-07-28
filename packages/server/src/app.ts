@@ -10,6 +10,8 @@ import { projectRoutes } from './routes/projects.js'
 import { fileRoutes } from './routes/files.js'
 import { gitRoutes } from './routes/git.js'
 import { agentRoutes } from './routes/agent.js'
+import { providerRoutes } from './routes/providers.js'
+import { oauthRoutes } from './routes/oauth.js'
 import { taskRoutes } from './routes/tasks.js'
 import { planRoutes } from './routes/plans.js'
 import { docRoutes } from './routes/docs.js'
@@ -43,6 +45,8 @@ export async function buildApp() {
     await fileRoutes(api)
     await gitRoutes(api)
     await agentRoutes(api)
+    await providerRoutes(api)
+    await oauthRoutes(api)
     await taskRoutes(api)
     await planRoutes(api)
     await docRoutes(api)

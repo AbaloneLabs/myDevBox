@@ -98,6 +98,34 @@
   color: var(--bg-tertiary);
 }
 
+.launcher-header-actions {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.launcher-header-actions .launcher-dashboard-btn {
+  margin-top: 0;
+}
+
+.launcher-settings-btn {
+  padding: 7px 14px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.launcher-settings-btn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
 /* ============ 빈 상태 ============ */
 .launcher-empty {
   text-align: center;

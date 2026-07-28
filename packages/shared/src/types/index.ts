@@ -216,6 +216,32 @@ export interface ModelInfo {
   supportsTools: boolean         // 도구 호출 지원 여부
 }
 
+// ============ LLM 프로바이더 (서버-레벨 자격증명) ============
+export type ProviderCategory = 'api-key' | 'openai-compat' | 'oauth' | 'cloud'
+
+/** 레지스트리 descriptor의 공개 표현 (시크릿 미포함). */
+export interface ProviderDescriptorPublic {
+  id: string
+  displayName: string
+  category: ProviderCategory
+  apiShape: string
+  defaultBaseUrl?: string
+  authFieldLabel?: string
+  supportsDiscovery?: boolean
+  docsUrl?: string
+}
+
+/** 저장된 프로바이더 자격증명 (API 응답 — 시크릿 미포함, hasApiKey만). */
+export interface ProviderCredential {
+  id: string
+  provider: string
+  displayName: string
+  baseUrlOverride?: string
+  defaultModel: string
+  isDefault: boolean
+  hasApiKey: boolean
+}
+
 // ============ API 공통 응답 ============
 export interface ApiResponse<T> {
   success: boolean

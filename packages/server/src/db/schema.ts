@@ -1,4 +1,4 @@
-import { pgTable, text, integer, timestamp, jsonb, uuid, real } from 'drizzle-orm/pg-core'
+import { pgTable, text, integer, timestamp, jsonb, uuid, real, boolean } from 'drizzle-orm/pg-core'
 import type { WikiFrontmatter } from '@mydevbox/shared'
 
 // 프로젝트 테이블
@@ -80,6 +80,20 @@ export const agentConfigs = pgTable('agent_configs', {
   temperature: real('temperature').default(0.7),
   maxTokens: integer('max_tokens').default(8192),
   apiKeyEncrypted: text('api_key_encrypted'),
+})
+
+// LLM 프로바이더 자격증명 (서버-레벨, 단일 사용자). isDefault=true 행을 에이전트가 사용.
+export const providerCredentials = pgTable('provider_credentials', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  provider: text('provider').notNull(),
+  apiKeyEncrypted: text('api_key_encrypted'),
+  oauthAccessTokenEncrypted: text('oauth_access_token_encrypted'),
+  oauthRefreshTokenEncrypted: text('oauth_refresh_token_encrypted'),
+  oauthExpiresAt: timestamp('oauth_expires_at', { withTimezone: true }),
+  baseUrlOverride: text('base_url_override'),
+  defaultModel: text('default_model').notNull(),
+  isDefault: boolean('is_default').default(false),
+  createdAt: timestamp('created_at').defaultNow(),
 })
 
 // 외부 파일 추적 테이블 (Plan 11 - Drive)

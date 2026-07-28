@@ -25,6 +25,7 @@ import {
   runAgentLoop, getProvider, buildSystemPrompt,
 } from '../agent/index.js'
 import { createReadOnlyTools, createDbWikiTools } from '../agent/tools/index.js'
+import { PROVIDER_BY_ID, resolveBaseUrl } from '../agent/llm/registry.js'
 import type {
   AgentContext, AgentLoopConfig, AgentTool, ModelConfig, AgentEvent,
 } from '../agent/types.js'
@@ -46,7 +47,7 @@ async function getProject(projectId: string): Promise<{ id: string; name: string
 /** Load + decrypt the agent model config. Returns null if no usable API key. */
 async function getMaintenanceProvider(projectId: string): Promise<ModelConfig | null> {
   const [configRow] = await db.select().from(agentConfigs).where(eq(agentConfigs.projectId, projectId))
-  const provider = (configRow?.provider as 'openai' | 'anthropic') ?? 'anthropic'
+  const provider = (configRow?.provider as string) ?? 'anthropic'
   const model = configRow?.model ?? 'claude-sonnet-4-20250514'
   const temperature = configRow?.temperature ?? 0.7
   const maxTokens = configRow?.maxTokens ?? 8192
@@ -56,7 +57,8 @@ async function getMaintenanceProvider(projectId: string): Promise<ModelConfig | 
     try { apiKey = decrypt(configRow.apiKeyEncrypted) } catch { apiKey = '' }
   }
   if (!apiKey) return null
-  return { provider, model, temperature, maxTokens, apiKey }
+  const descriptor = PROVIDER_BY_ID[provider]
+  return { provider, model, temperature, maxTokens, apiKey, baseUrl: descriptor ? resolveBaseUrl(descriptor) : undefined }
 }
 
 /** Restricted, side-effect-free (except wiki) tool set for background runs. */

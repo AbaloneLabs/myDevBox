@@ -70,7 +70,7 @@ export interface AgentTool extends ToolDefinition {
 // ============ Model Configuration ============
 
 export interface ModelConfig {
-  provider: 'openai' | 'anthropic'
+  provider: string
   model: string
   temperature?: number
   maxTokens?: number

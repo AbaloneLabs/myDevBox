@@ -11,6 +11,7 @@ import type { WebSocket } from 'ws'
 import type { ClientMessage, ServerMessage } from '@mydevbox/shared'
 import { connectionManager } from './connection.js'
 import { sessionRegistry, buildSystemPrompt, getProvider } from '../agent/index.js'
+import { PROVIDER_BY_ID, resolveBaseUrl } from '../agent/llm/registry.js'
 import { createProjectTools, createDbTodoTools, createDbWikiTools } from '../agent/tools/index.js'
 import type { AgentEvent, AgentLoopConfig, Message, ModelConfig } from '../agent/types.js'
 import { db } from '../db/connection.js'
@@ -76,7 +77,7 @@ async function handleSendMessage(
     // 2. Load agent config
     const [configRow] = await db.select().from(agentConfigs).where(eq(agentConfigs.projectId, projectId)).limit(1)
 
-    const provider = (configRow?.provider as 'openai' | 'anthropic') ?? 'anthropic'
+    const provider = (configRow?.provider as string) ?? 'anthropic'
     const model = configRow?.model ?? 'claude-sonnet-4-20250514'
     const temperature = configRow?.temperature ?? 0.7
     const maxTokens = configRow?.maxTokens ?? 8192
@@ -105,12 +106,14 @@ async function handleSendMessage(
     })
 
     // 4. Build model config
+    const descriptor = PROVIDER_BY_ID[provider]
     const modelConfig: ModelConfig = {
       provider,
       model,
       temperature,
       maxTokens,
       apiKey,
+      baseUrl: descriptor ? resolveBaseUrl(descriptor) : undefined,
     }
 
     // 5. Create tools

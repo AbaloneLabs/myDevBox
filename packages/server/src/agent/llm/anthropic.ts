@@ -25,7 +25,12 @@ export class AnthropicProvider implements LLMProvider {
     tools?: ToolDefinition[],
     signal?: AbortSignal,
   ): AsyncIterable<StreamEvent> {
-    const client = new Anthropic({ apiKey: model.apiKey, baseURL: model.baseUrl })
+    // OAuth 토큰이면 Bearer(authToken) + beta 헤더; 아니면 API 키.
+    const client = new Anthropic(
+      model.authMode === 'bearer'
+        ? { authToken: model.apiKey, baseURL: model.baseUrl, defaultHeaders: model.extraHeaders }
+        : { apiKey: model.apiKey, baseURL: model.baseUrl, defaultHeaders: model.extraHeaders },
+    )
 
     // Convert messages to Anthropic format
     const anthropicMessages = this.convertMessages(messages)

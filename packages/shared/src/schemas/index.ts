@@ -98,6 +98,16 @@ export const saveProviderSchema = z.object({
 
 export type SaveProviderInput = z.infer<typeof saveProviderSchema>
 
+export const saveRoleMappingsSchema = z.object({
+  roles: z.array(z.object({
+    role: z.string().min(1),
+    credentialId: z.string().min(1),
+    model: z.string().min(1),
+  })),
+})
+
+export type SaveRoleMappingsInput = z.infer<typeof saveRoleMappingsSchema>
+
 // ============ Tasks ============
 export const createTaskSchema = z.object({
   title: z.string().min(1).max(200),

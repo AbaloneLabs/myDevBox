@@ -1,13 +1,56 @@
 import { useState, useMemo, useEffect } from 'react'
 import { useStore } from '../store/useStore'
 import { api } from '../api/client'
-import type { ProviderDescriptorPublic } from '../types'
+import {
+  MODEL_ROLES,
+  type ModelRole,
+  type ModelRoleMapping,
+  type ProviderCredential,
+  type ProviderDescriptorPublic,
+} from '../types'
 import { CloseIcon, TrashIcon, LoaderIcon, RefreshIcon, LinkIcon } from './Icons'
 import './ProviderSettings.css'
 
 const CATEGORY_LABELS: Record<string, string> = {
   'api-key': 'API 키',
   'openai-compat': 'OpenAI 호환',
+}
+
+const ROLE_LABELS: Record<ModelRole, string> = {
+  default: '기본(default)',
+  smol: '빠름(smol)',
+  slow: '심층(slow)',
+  plan: '계획(plan)',
+  commit: '커밋(commit)',
+}
+
+const ROLE_HINTS: Record<ModelRole, string> = {
+  default: '일반 대화/작업에 사용할 기본 모델',
+  smol: '빠르고 가벼운 작업에 적합한 모델',
+  slow: '복잡한 추론·심층 분석용 모델',
+  plan: '계획 수립에 사용할 모델',
+  commit: '커밋 메시지 생성용 모델',
+}
+
+type RoleFormRow = { credentialId: string; model: string }
+
+// 역할별 폼 초기값 생성 — roleMappings 우선, 미설정 역할은 기본 프로바이더
+// (없으면 첫 프로바이더)의 자격증명 + 기본 모델로 채운다.
+function buildRoleForm(
+  mappings: ModelRoleMapping[],
+  providers: ProviderCredential[],
+): Record<ModelRole, RoleFormRow> {
+  const fallback = providers.find((p) => p.isDefault) ?? providers[0]
+  const form = {} as Record<ModelRole, RoleFormRow>
+  for (const role of MODEL_ROLES) {
+    const mapping = mappings.find((m) => m.role === role)
+    form[role] = mapping
+      ? { credentialId: mapping.credentialId, model: mapping.model }
+      : fallback
+        ? { credentialId: fallback.id, model: fallback.defaultModel }
+        : { credentialId: '', model: '' }
+  }
+  return form
 }
 
 export function ProviderSettings() {
@@ -24,6 +67,8 @@ export function ProviderSettings() {
   const startOAuthLogin = useStore((s) => s.startOAuthLogin)
   const cancelOAuthLogin = useStore((s) => s.cancelOAuthLogin)
   const loadProviders = useStore((s) => s.loadProviders)
+  const roleMappings = useStore((s) => s.roleMappings)
+  const saveRoleMappings = useStore((s) => s.saveRoleMappings)
 
   // 폼 상태
   const [selectedProvider, setSelectedProvider] = useState('')
@@ -36,6 +81,11 @@ export function ProviderSettings() {
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [copied, setCopied] = useState(false)
+  // 역할별 모델 폼 상태 (자격증명 + 모델 per role)
+  const [roleForm, setRoleForm] = useState<Record<ModelRole, RoleFormRow>>(() =>
+    buildRoleForm(roleMappings, providers),
+  )
+  const [roleSaving, setRoleSaving] = useState(false)
 
   // 오버레이가 열릴 때 폼 초기화 (프로바이더가 없으면 기본 체크)
   useEffect(() => {
@@ -53,6 +103,10 @@ export function ProviderSettings() {
   useEffect(() => {
     if (!open) cancelOAuthLogin()
   }, [open, cancelOAuthLogin])
+  // providers/roleMappings 변경 시 역할 폼 재초기화 (저장 후 새 상태 반영)
+  useEffect(() => {
+    setRoleForm(buildRoleForm(roleMappings, providers))
+  }, [roleMappings, providers])
 
   // api-key / openai-compat 카테고리로 그룹화
   const grouped = useMemo(() => {
@@ -158,6 +212,47 @@ export function ProviderSettings() {
     cancelOAuthLogin()
     await loadProviders()
   }
+  const handleRoleCredentialChange = (role: ModelRole, credentialId: string) => {
+    const provider = providers.find((p) => p.id === credentialId)
+    setRoleForm((prev) => ({
+      ...prev,
+      [role]: {
+        credentialId,
+        // 자격증명이 바뀌면 해당 프로바이더의 기본 모델로 갱신
+        model: provider ? provider.defaultModel : prev[role].model,
+      },
+    }))
+  }
+
+  const handleRoleModelChange = (role: ModelRole, model: string) => {
+    setRoleForm((prev) => ({
+      ...prev,
+      [role]: { credentialId: prev[role].credentialId, model },
+    }))
+  }
+
+  const handleSaveRoles = async () => {
+    const roles: Array<{ role: string; credentialId: string; model: string }> = []
+    for (const role of MODEL_ROLES) {
+      const row = roleForm[role]
+      if (row && row.credentialId && row.model.trim()) {
+        roles.push({ role, credentialId: row.credentialId, model: row.model.trim() })
+      }
+    }
+    if (roles.length === 0) {
+      setError('저장할 역할 매핑이 없습니다. 프로바이더를 먼저 추가하세요.')
+      return
+    }
+    setRoleSaving(true)
+    setError(null)
+    try {
+      await saveRoleMappings(roles)
+    } catch (e) {
+      setError(e instanceof Error ? e.message : '역할 매핑 저장 중 오류가 발생했습니다')
+    } finally {
+      setRoleSaving(false)
+    }
+  }
 
   return (
     <div className="ps-overlay" onClick={closeProviderSettings}>
@@ -222,6 +317,72 @@ export function ProviderSettings() {
                 ))}
               </ul>
             )}
+          </section>
+
+          {/* 역할별 모델 (role → provider+model 라우팅) */}
+          <section className="ps-section">
+            <h3 className="ps-section-title">역할별 모델</h3>
+            <div className="ps-role-list">
+              {MODEL_ROLES.map((role) => {
+                const row = roleForm[role]
+                return (
+                  <div key={role} className="ps-role-row">
+                    <div className="ps-role-meta">
+                      <span className="ps-role-label">{ROLE_LABELS[role]}</span>
+                      <span className="ps-hint">{ROLE_HINTS[role]}</span>
+                    </div>
+                    <div className="ps-role-controls">
+                      {providers.length > 0 ? (
+                        <select
+                          className="ps-select"
+                          value={row.credentialId}
+                          onChange={(e) => handleRoleCredentialChange(role, e.target.value)}
+                        >
+                          {!row.credentialId && (
+                            <option value="" disabled>프로바이더 선택</option>
+                          )}
+                          {providers.map((p) => (
+                            <option key={p.id} value={p.id}>
+                              {p.displayName} · {p.defaultModel}
+                            </option>
+                          ))}
+                        </select>
+                      ) : (
+                        <select className="ps-select" disabled>
+                          <option value="">프로바이더 없음</option>
+                        </select>
+                      )}
+                      <input
+                        type="text"
+                        className="ps-input ps-mono"
+                        value={row.model}
+                        onChange={(e) => handleRoleModelChange(role, e.target.value)}
+                        placeholder="모델 이름"
+                        disabled={providers.length === 0}
+                      />
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+            {providers.length === 0 && (
+              <p className="ps-empty">먼저 프로바이더를 추가/연결하세요.</p>
+            )}
+            <button
+              type="button"
+              className="ps-save-btn ps-role-save-btn"
+              onClick={handleSaveRoles}
+              disabled={providers.length === 0 || roleSaving}
+            >
+              {roleSaving ? (
+                <>
+                  <LoaderIcon size={14} className="spin" />
+                  <span>저장 중...</span>
+                </>
+              ) : (
+                <span>역할 매핑 저장</span>
+              )}
+            </button>
           </section>
           {/* OAuth 로그인 (구독형 프로바이더) */}
           {(oauthProviders.length > 0 || oauthPending) && (

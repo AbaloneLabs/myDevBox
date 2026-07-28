@@ -9,6 +9,7 @@ import type {
   ProviderCredential,
   ProviderDescriptorPublic,
   SaveProviderInput,
+  ModelRoleMapping,
   Doc,
   ChatMessage,
   GitInfo,
@@ -47,6 +48,11 @@ interface AppState {
   saveProvider: (input: SaveProviderInput) => Promise<void>
   setDefaultProvider: (id: string) => Promise<void>
   deleteProvider: (id: string) => Promise<void>
+  roleMappings: ModelRoleMapping[]
+  loadRoleMappings: () => Promise<void>
+  saveRoleMappings: (
+    roles: Array<{ role: string; credentialId: string; model: string }>,
+  ) => Promise<void>
   oauthProviders: OAuthProviderInfo[]
   oauthPending: null | {
     provider: string
@@ -268,12 +274,14 @@ export const useStore = create<AppState>((set) => ({
   providersLoading: false,
   oauthProviders: [],
   oauthPending: null,
+  roleMappings: [],
 
   openProviderSettings: () => {
     set({ providerSettingsOpen: true })
     void useStore.getState().loadAvailableProviders()
     void useStore.getState().loadProviders()
     void useStore.getState().loadOAuthProviders()
+    void useStore.getState().loadRoleMappings()
   },
 
   closeProviderSettings: () => set({ providerSettingsOpen: false }),
@@ -323,6 +331,25 @@ export const useStore = create<AppState>((set) => ({
       await useStore.getState().loadProviders()
     } catch (e) {
       set({ error: e instanceof Error ? e.message : '프로바이더 삭제 중 오류가 발생했습니다' })
+      throw e
+    }
+  },
+
+  loadRoleMappings: async () => {
+    try {
+      const roleMappings = await api.getRoleMappings()
+      set({ roleMappings })
+    } catch {
+      // 조용히 실패
+    }
+  },
+
+  saveRoleMappings: async (roles) => {
+    try {
+      await api.saveRoleMappings(roles)
+      await useStore.getState().loadRoleMappings()
+    } catch (e) {
+      set({ error: e instanceof Error ? e.message : '역할 매핑 저장 중 오류가 발생했습니다' })
       throw e
     }
   },

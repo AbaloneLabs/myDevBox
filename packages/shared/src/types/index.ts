@@ -242,6 +242,19 @@ export interface ProviderCredential {
   hasApiKey: boolean
 }
 
+// ============ 역할별 모델 라우팅 ============
+export type ModelRole = 'default' | 'smol' | 'slow' | 'plan' | 'commit'
+export const MODEL_ROLES: ModelRole[] = ['default', 'smol', 'slow', 'plan', 'commit']
+
+/** 역할 → 자격증명+모델 매핑 (API 응답). */
+export interface ModelRoleMapping {
+  role: ModelRole
+  credentialId: string
+  model: string
+  provider: string
+  displayName: string
+}
+
 // ============ API 공통 응답 ============
 export interface ApiResponse<T> {
   success: boolean

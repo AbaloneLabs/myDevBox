@@ -4,10 +4,10 @@
  */
 import type { FastifyInstance } from 'fastify'
 import { eq } from 'drizzle-orm'
-import type { ApiResponse, ProviderCredential, ProviderDescriptorPublic } from '@mydevbox/shared'
-import { saveProviderSchema } from '@mydevbox/shared'
+import type { ApiResponse, ProviderCredential, ProviderDescriptorPublic, ModelRoleMapping } from '@mydevbox/shared'
+import { saveProviderSchema, saveRoleMappingsSchema } from '@mydevbox/shared'
 import { db } from '../db/connection.js'
-import { providerCredentials } from '../db/schema.js'
+import { providerCredentials, modelRoles } from '../db/schema.js'
 import { encrypt, decrypt } from '../db/crypto.js'
 import { PROVIDERS, PROVIDER_BY_ID, resolveBaseUrl } from '../agent/llm/registry.js'
 
@@ -142,5 +142,40 @@ export async function providerRoutes(app: FastifyInstance): Promise<void> {
     } catch (e) {
       return reply.code(502).send({ success: false, error: `Discovery failed: ${(e as Error).message}` })
     }
+  })
+
+  // 역할별 모델 라우팅
+  app.get('/providers/roles', async (): Promise<ApiResponse<ModelRoleMapping[]>> => {
+    const roleRows = await db.select().from(modelRoles)
+    const creds = await db.select().from(providerCredentials)
+    const credById = new Map(creds.map((c) => [c.id, c]))
+    const data: ModelRoleMapping[] = roleRows.map((r) => {
+      const c = r.credentialId ? credById.get(r.credentialId) : undefined
+      const descriptor = c ? PROVIDER_BY_ID[c.provider] : undefined
+      return {
+        role: r.role as ModelRoleMapping['role'],
+        credentialId: r.credentialId ?? '',
+        model: r.model,
+        provider: c?.provider ?? '',
+        displayName: descriptor?.displayName ?? c?.provider ?? '',
+      }
+    })
+    return { success: true, data }
+  })
+
+  app.put('/providers/roles', async (request, reply): Promise<ApiResponse<null>> => {
+    const parsed = saveRoleMappingsSchema.safeParse(request.body)
+    if (!parsed.success) {
+      return reply.code(400).send({ success: false, error: 'Validation Error', details: parsed.error.issues })
+    }
+    for (const r of parsed.data.roles) {
+      const [existing] = await db.select().from(modelRoles).where(eq(modelRoles.role, r.role))
+      if (existing) {
+        await db.update(modelRoles).set({ credentialId: r.credentialId, model: r.model }).where(eq(modelRoles.role, r.role))
+      } else {
+        await db.insert(modelRoles).values({ role: r.role, credentialId: r.credentialId, model: r.model })
+      }
+    }
+    return { success: true, data: null }
   })
 }

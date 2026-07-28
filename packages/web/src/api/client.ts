@@ -15,6 +15,7 @@ import type {
   ProviderCredential,
   ProviderDescriptorPublic,
   SaveProviderInput,
+  ModelRoleMapping,
   Task,
   Plan,
   Doc,
@@ -533,6 +534,20 @@ export const api = {
 
   async discoverModels(id: string): Promise<string[]> {
     return request<string[]>(`/providers/${id}/models`)
+  },
+  // ============ 역할별 모델 라우팅 (role → 자격증명+모델) ============
+
+  async getRoleMappings(): Promise<ModelRoleMapping[]> {
+    return request<ModelRoleMapping[]>('/providers/roles')
+  },
+
+  async saveRoleMappings(
+    roles: Array<{ role: string; credentialId: string; model: string }>,
+  ): Promise<void> {
+    await request<null>('/providers/roles', {
+      method: 'PUT',
+      body: JSON.stringify({ roles }),
+    })
   },
   // ============ OAuth (구독형 프로바이더 연결) ============
 

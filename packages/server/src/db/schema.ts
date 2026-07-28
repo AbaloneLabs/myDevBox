@@ -96,6 +96,13 @@ export const providerCredentials = pgTable('provider_credentials', {
   createdAt: timestamp('created_at').defaultNow(),
 })
 
+// 역할별 모델 라우팅 (default/smol/slow/plan/commit → 자격증명+모델).
+export const modelRoles = pgTable('model_roles', {
+  role: text('role').primaryKey(),
+  credentialId: uuid('credential_id').references(() => providerCredentials.id, { onDelete: 'cascade' }),
+  model: text('model').notNull(),
+})
+
 // 외부 파일 추적 테이블 (Plan 11 - Drive)
 export const trackedFiles = pgTable('tracked_files', {
   id: uuid('id').primaryKey().defaultRandom(),

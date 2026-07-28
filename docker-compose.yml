@@ -33,6 +33,8 @@ services:
       - ENCRYPTION_KEY=${ENCRYPTION_KEY:-mydevbox-dev-encryption-key-change-in-prod}
       # 외부 git 저장소 자동 동기화 주기 (기본 5분)
       - MYDEVBOX_GIT_SYNC_INTERVAL_MS=${MYDEVBOX_GIT_SYNC_INTERVAL_MS:-300000}
+      # OAuth(PKCE) 콜백이 돌아올 공개 URL (예: http://192.168.x.x:35001). 디바이스코드는 불필요.
+      - MYDEVBOX_PUBLIC_URL=${MYDEVBOX_PUBLIC_URL:-http://localhost:35001}
     depends_on:
       db:
         condition: service_healthy

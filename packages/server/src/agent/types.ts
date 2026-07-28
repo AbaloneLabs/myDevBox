@@ -77,6 +77,7 @@ export interface ModelConfig {
   apiKey: string
   baseUrl?: string
   extraHeaders?: Record<string, string>
+  authMode?: 'apikey' | 'bearer'
 }
 
 // ============ Agent Context ============

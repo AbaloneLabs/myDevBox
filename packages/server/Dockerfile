@@ -50,6 +50,6 @@ COPY packages/server/drizzle ./packages/server/drizzle
 COPY --from=builder /app/packages/web/dist ./packages/web/dist
 
 ENV NODE_ENV=production
-ENV PORT=3001
-EXPOSE 3001
+ENV PORT=35001
+EXPOSE 35001
 CMD ["node", "packages/server/dist/index.js"]

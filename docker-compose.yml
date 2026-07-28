@@ -1,3 +1,4 @@
+# Port range: 35xxx, reserved for local mydevbox services.
 services:
   # PostgreSQL 데이터베이스 (pgvector 포함)
   db:
@@ -7,7 +8,7 @@ services:
       POSTGRES_PASSWORD: mydevbox
       POSTGRES_DB: mydevbox
     ports:
-      - "5432:5432"
+      - "35432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
@@ -23,10 +24,10 @@ services:
       context: .
       dockerfile: packages/server/Dockerfile
     ports:
-      - "3001:3001"
+      - "35001:35001"
     environment:
       - NODE_ENV=production
-      - PORT=3001
+      - PORT=35001
       - HOST=0.0.0.0
       - DATABASE_URL=postgresql://mydevbox:mydevbox@db:5432/mydevbox
       - ENCRYPTION_KEY=${ENCRYPTION_KEY:-mydevbox-dev-encryption-key-change-in-prod}

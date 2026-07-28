@@ -19,14 +19,14 @@ export function getConfig(): ServerConfig {
   const isDev = process.env.NODE_ENV !== 'production'
 
   return {
-    port: parseInt(process.env.PORT ?? '3000', 10),
+    port: parseInt(process.env.PORT ?? '35000', 10),
     host: process.env.HOST ?? '0.0.0.0',
     reposDir: process.env.MYDEVBOX_REPOS_DIR
       ?? (isDocker ? '/root/repos' : path.join(os.homedir(), 'repos')),
     databaseUrl: process.env.DATABASE_URL
       ?? (isDocker
         ? 'postgresql://mydevbox:mydevbox@db:5432/mydevbox'
-        : 'postgresql://mydevbox:mydevbox@localhost:5432/mydevbox'),
+        : 'postgresql://mydevbox:mydevbox@localhost:35432/mydevbox'),
     encryptionKey: process.env.ENCRYPTION_KEY
       ?? process.env.MYDEVBOX_ENCRYPTION_KEY
       ?? `mydevbox-${os.hostname()}-${os.userInfo().uid}`,

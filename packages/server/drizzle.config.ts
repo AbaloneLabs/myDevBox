@@ -4,7 +4,7 @@ import { defineConfig } from 'drizzle-kit'
 // 환경변수를 직접 읽어 의존성을 최소화합니다.
 const databaseUrl =
   process.env.DATABASE_URL ??
-  'postgresql://mydevbox:mydevbox@localhost:5432/mydevbox'
+  'postgresql://mydevbox:mydevbox@localhost:35432/mydevbox'
 
 export default defineConfig({
   schema: './src/db/schema.ts',

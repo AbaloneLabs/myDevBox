@@ -291,7 +291,7 @@ function PreviewPanel() {
     <div className="preview-panel">
       <div className="preview-toolbar">
         <div className="preview-url-bar">
-          <span className="preview-url">localhost:3000</span>
+          <span className="preview-url">localhost:35000</span>
         </div>
       </div>
       <div className="preview-content">

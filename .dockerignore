@@ -10,3 +10,6 @@ AGENTS.md
 .env
 .env.*
 !.env.example
+
+# TypeScript incremental build cache (stale copy makes composite tsc skip emission)
+*.tsbuildinfo

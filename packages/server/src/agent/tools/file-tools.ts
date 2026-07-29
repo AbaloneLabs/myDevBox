@@ -8,11 +8,13 @@
 
 import fs from 'node:fs'
 import path from 'node:path'
+import crypto from 'node:crypto'
 import type { AgentTool, TextContent, ToolResult } from '../types.js'
 import type { ToolFactory, ToolOptions } from './types.js'
 import { DEFAULT_TOOL_OPTIONS } from './types.js'
 import { resolveProjectPath, toRelativePath } from '../../services/path-service.js'
 import { detectLanguage } from '../../services/file-utils.js'
+import { getLspClient } from '../../lsp/index.js'
 import { snapshotManager } from './snapshot.js'
 
 const MAX_READ_LINES = 2000
@@ -27,6 +29,29 @@ function isBinary(buffer: Buffer): boolean {
 
 function textResult(text: string, isError = false): ToolResult {
   return { content: [{ type: 'text', text }], isError }
+}
+/** 02-B: 파일 콘텐츠 해시 (4-hex). read/edit 간 stale 검증용. omp hashline 패턴 참조. */
+function fileHash(content: string): string {
+  return crypto.createHash('sha256').update(content.replace(/\r\n/g, '\n')).digest('hex').slice(0, 4)
+}
+
+const LSP_EXTENSIONS: Record<string, true> = {
+  '.ts': true, '.tsx': true, '.js': true, '.jsx': true, '.mts': true, '.cts': true,
+}
+
+/** 02-C: LSP writethrough — TS/JS 파일이면 tsserver로 진단 획득. 실패 시 빈 문자열(논블로킹). */
+async function getLspDiagnosticsText(fullPath: string, content: string): Promise<string> {
+  if (!LSP_EXTENSIONS[path.extname(fullPath)]) return ''
+  try {
+    const lsp = getLspClient()
+    await lsp.syncFile(fullPath, content)
+    const diags = await lsp.getDiagnostics(fullPath)
+    if (diags.length === 0) return ''
+    const lines = diags.map((d) => `  L${d.line}:${d.character} [${d.severity}] ${d.message}`)
+    return `--- LSP Diagnostics (${diags.length}) ---\n${lines.join('\n')}`
+  } catch {
+    return ''
+  }
 }
 
 // ============ read ============
@@ -86,7 +111,10 @@ export const createReadTool: ToolFactory = (cwd, options) => {
         .map((line, i) => `${String(start + i + 1).padStart(maxNumWidth)}: ${line}`)
         .join('\n')
 
-      let result = formatted
+      const hash = fileHash(content)
+      const relPath = toRelativePath(cwd, fullPath)
+      const header = `[${relPath}#${hash}]\n`
+      let result = header + formatted
       if (allLines.length > end) {
         result += `\n... (${allLines.length - end} more lines, use start_line to continue reading)`
       }
@@ -128,7 +156,9 @@ export const createWriteTool: ToolFactory = (cwd, options) => {
       fs.writeFileSync(fullPath, content, 'utf-8')
 
       const lineCount = content.split('\n').length
-      return textResult(`Successfully wrote ${lineCount} lines to ${filePath}`)
+      const diagText = await getLspDiagnosticsText(fullPath, content)
+      const baseMsg = `Successfully wrote ${lineCount} lines to ${filePath}`
+      return textResult(diagText ? `${baseMsg}\n\n${diagText}` : baseMsg)
     },
   }
 
@@ -148,6 +178,7 @@ export const createEditTool: ToolFactory = (cwd) => {
         old_string: { type: 'string', description: 'The exact text to replace' },
         new_string: { type: 'string', description: 'The text to replace it with' },
         replace_all: { type: 'boolean', default: false, description: 'Replace all occurrences' },
+        tag: { type: 'string', description: 'Content hash tag from read (e.g. [path#a1b2]). Verifies file unchanged since last read.' },
       },
       required: ['file_path', 'old_string', 'new_string'],
     },
@@ -164,6 +195,15 @@ export const createEditTool: ToolFactory = (cwd) => {
       }
 
       const content = fs.readFileSync(fullPath, 'utf-8')
+
+      // 02-B: content-hash 검증 — tag가 있으면 파일이 변경됐는지 확인
+      const editTag = args.tag as string | undefined
+      if (editTag) {
+        const expectedHash = editTag.match(/#([0-9a-f]{4})/)?.[1]
+        if (expectedHash && expectedHash !== fileHash(content)) {
+          return textResult(`File changed since last read (tag ${expectedHash} ≠ current). Re-read the file first.`, true)
+        }
+      }
 
       // Count occurrences
       let count = 0
@@ -198,7 +238,9 @@ export const createEditTool: ToolFactory = (cwd) => {
       fs.writeFileSync(fullPath, newContent, 'utf-8')
 
       const replaced = replaceAll ? count : 1
-      return textResult(`Successfully edited ${filePath}: replaced ${replaced} occurrence(s)`)
+      const diagText = await getLspDiagnosticsText(fullPath, newContent)
+      const baseMsg = `Successfully edited ${filePath}: replaced ${replaced} occurrence(s)`
+      return textResult(diagText ? `${baseMsg}\n\n${diagText}` : baseMsg)
     },
   }
 
@@ -228,6 +270,7 @@ export const createMultiEditTool: ToolFactory = (cwd) => {
           },
           description: 'List of edits to apply sequentially',
         },
+        tag: { type: 'string', description: 'Content hash tag from read. Verifies file unchanged since last read.' },
       },
       required: ['file_path', 'edits'],
     },
@@ -246,6 +289,15 @@ export const createMultiEditTool: ToolFactory = (cwd) => {
       }
 
       const originalContent = fs.readFileSync(fullPath, 'utf-8')
+
+      // 02-B: content-hash 검증
+      const multiTag = args.tag as string | undefined
+      if (multiTag) {
+        const expectedHash = multiTag.match(/#([0-9a-f]{4})/)?.[1]
+        if (expectedHash && expectedHash !== fileHash(originalContent)) {
+          return textResult(`File changed since last read (tag ${expectedHash} ≠ current). Re-read the file first.`, true)
+        }
+      }
       let content = originalContent
 
       // Save snapshot before any edits
@@ -293,9 +345,9 @@ export const createMultiEditTool: ToolFactory = (cwd) => {
 
       fs.writeFileSync(fullPath, content, 'utf-8')
 
-      return textResult(
-        `Successfully applied ${edits.length} edit(s) to ${filePath}:\n${results.join('\n')}`,
-      )
+      const diagText = await getLspDiagnosticsText(fullPath, content)
+      const baseMsg = `Successfully applied ${edits.length} edit(s) to ${filePath}:\n${results.join('\n')}`
+      return textResult(diagText ? `${baseMsg}\n\n${diagText}` : baseMsg)
     },
   }
 

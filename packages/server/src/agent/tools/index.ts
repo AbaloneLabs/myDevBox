@@ -38,6 +38,9 @@ import { createPlanCreateTool } from './todo-plan.js'
 // Fetch tool
 import { createFetchTool } from './fetch.js'
 
+// Task tool (subagent)
+import { createTaskTool } from './task.js'
+
 // Snapshot manager (for clearing on project switch)
 export { snapshotManager } from './snapshot.js'
 
@@ -71,6 +74,7 @@ export function createProjectTools(
     createTodoReadTool(projectPath, options),
     createPlanCreateTool(projectPath, options),
     createFetchTool(projectPath, options),
+    createTaskTool(projectPath, options),
   ]
 }
 
@@ -107,6 +111,7 @@ const EXCLUSIVE_TOOL_NAMES: Record<string, true> = {
   rename: true,
   todo_write: true,
   wiki_write: true,
+  task: true,
 }
 
 /**

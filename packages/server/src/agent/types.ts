@@ -143,4 +143,8 @@ export interface AgentLoopConfig {
   beforeToolCall?: (ctx: BeforeToolCallContext) => Promise<{ block?: boolean; reason?: string } | void>
   afterToolCall?: (ctx: AfterToolCallContext) => Promise<Partial<ToolResult> | void>
   shouldStopAfterTurn?: (ctx: ShouldStopContext) => boolean | Promise<boolean>
+  /** 02-E: 매 턴 후 어드바이저(2nd 모델) 검토. note 반환 시 에이전트에 주입. */
+  advisorCheck?: (ctx: { lastAssistantText: string }) => Promise<{ severity: 'nit' | 'concern' | 'blocker'; text: string } | void>
+  /** 02-F: 스트리밍 중 룰 매칭(TTSR). abort 반환 시 스트림 중단 + 룰 주입 후 재시도. */
+  streamRuleCheck?: (delta: string, fullText: string) => { abort: true; rule: string } | void
 }

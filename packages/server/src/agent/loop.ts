@@ -99,6 +99,25 @@ export async function runAgentLoop(
 
     await emit({ type: 'turn_end', message: assistantMessage, toolResults })
 
+    // 02-E: advisor check — 매 턴 후 검토. note 반환 시 다음 턴에 주입.
+    if (config.advisorCheck) {
+      const lastText = assistantMessage.content.find((c) => c.type === 'text' as const)?.text ?? ''
+      try {
+        const note = await config.advisorCheck({ lastAssistantText: lastText })
+        if (note && note.severity !== 'nit') {
+          // concern/blocker → 다음 턴에 시스템 메시지로 주입
+          context.messages.push({
+            id: `advisor-${Date.now()}`,
+            role: 'user',
+            content: [{ type: 'text' as const, text: `[Advisor ${note.severity}]: ${note.text}` }],
+            timestamp: Date.now(),
+          })
+        }
+      } catch {
+        // advisor 실패 시 무시 — 에이전트 루프에 영향 없음
+      }
+    }
+
     // 8. shouldStopAfterTurn check
     if (await config.shouldStopAfterTurn?.({ message: assistantMessage, toolResults, context, newMessages })) {
       await emit({ type: 'agent_end', messages: newMessages })

@@ -259,15 +259,11 @@ async function executeToolCalls(
     (c): c is ToolCallContent => c.type === 'tool_call',
   )
 
-  // Check if any tool requires sequential execution
-  const hasSequential = toolCalls.some(tc =>
-    context.tools.find(t => t.name === tc.name)?.executionMode === 'sequential',
-  )
-
-  if (config.toolExecution === 'sequential' || hasSequential) {
+  // 전역 sequential 강제(기존 호환) 아니면 shared/exclusive 혼합 스케줄 (→ 02-A).
+  if (config.toolExecution === 'sequential') {
     return executeSequential(context, toolCalls, config, signal, emit)
   }
-  return executeParallel(context, toolCalls, config, signal, emit)
+  return executeConcurrent(context, toolCalls, config, signal, emit)
 }
 
 async function executeSequential(
@@ -289,17 +285,50 @@ async function executeSequential(
   return results
 }
 
-async function executeParallel(
+/**
+ * shared/exclusive 혼합 스케줄 (omp 패턴, → 02-A).
+ * shared(읽기/검색)는 서로 병렬, exclusive(쓰기/실행)는 직전 exclusive + 대기 중 shared가
+ * 모두 끝난 뒤 단독 실행되고 다음 exclusive의 기준이 된다.
+ */
+async function executeConcurrent(
   context: AgentContext,
   toolCalls: ToolCallContent[],
   config: AgentLoopConfig,
   signal: AbortSignal | undefined,
   emit: AgentEventSink,
 ): Promise<Message[]> {
-  const results = await Promise.all(
-    toolCalls.map(tc => executeSingleTool(context, tc, config, signal, emit)),
-  )
-  return results
+  const results: (Message | undefined)[] = new Array(toolCalls.length)
+  let lastExclusive: Promise<void> = Promise.resolve()
+  let sharedTasks: Promise<void>[] = []
+  const all: Promise<void>[] = []
+
+  for (let i = 0; i < toolCalls.length; i++) {
+    const idx = i
+    const tc = toolCalls[idx]
+    const tool = context.tools.find((t) => t.name === tc.name)
+    const exclusive = tool?.concurrency === 'exclusive' || tool?.executionMode === 'sequential'
+
+    const run = async (): Promise<void> => {
+      if (signal?.aborted) return
+      results[idx] = await executeSingleTool(context, tc, config, signal, emit)
+    }
+
+    if (exclusive) {
+      // 직전 exclusive + 이 그룹의 shared들이 끝난 뒤 단독 실행. pendingShared를 스냅샷.
+      const pendingShared = sharedTasks
+      const task = lastExclusive.then(() => Promise.all(pendingShared)).then(run)
+      lastExclusive = task
+      sharedTasks = []
+      all.push(task)
+    } else {
+      // 직전 exclusive가 끝난 뒤 병렬 그룹으로 실행.
+      const task = lastExclusive.then(run)
+      sharedTasks.push(task)
+      all.push(task)
+    }
+  }
+  await Promise.all(all)
+  return results.filter((m): m is Message => m !== undefined)
 }
 
 async function executeSingleTool(

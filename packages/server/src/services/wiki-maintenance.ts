@@ -23,7 +23,7 @@ import { logger } from '../logger.js'
 import {
   runAgentLoop, getProvider, buildSystemPrompt,
 } from '../agent/index.js'
-import { createReadOnlyTools, createDbWikiTools } from '../agent/tools/index.js'
+import { createReadOnlyTools, createDbWikiTools, stampConcurrency } from '../agent/tools/index.js'
 import { getDefaultModelConfig } from '../agent/model-config.js'
 import type {
   AgentContext, AgentLoopConfig, AgentTool, ModelConfig, AgentEvent,
@@ -49,7 +49,7 @@ function buildMaintenanceTools(projectId: string, projectPath: string): AgentToo
   const readonly = createReadOnlyTools(projectPath)
   const wiki = createDbWikiTools(projectId)
     .filter(t => t.name === 'wiki_query' || t.name === 'wiki_write')
-  return [...readonly, ...wiki]
+  return stampConcurrency([...readonly, ...wiki])
 }
 
 /** Run a headless agent turn with the maintenance tool set. Exported for master aggregation. */

@@ -49,6 +49,7 @@ export interface ToolDefinition {
   description: string
   inputSchema: Record<string, unknown>   // JSON Schema
   executionMode?: 'sequential' | 'parallel'
+  concurrency?: 'shared' | 'exclusive'
 }
 
 export interface ToolResult {

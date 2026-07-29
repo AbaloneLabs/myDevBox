@@ -96,3 +96,24 @@ export function createReadOnlyTools(
 export function getToolNames(tools: AgentTool[]): string[] {
   return tools.map(t => t.name)
 }
+
+const EXCLUSIVE_TOOL_NAMES: Record<string, true> = {
+  write: true,
+  edit: true,
+  multi_edit: true,
+  bash: true,
+  remove: true,
+  mkdir: true,
+  rename: true,
+  todo_write: true,
+  wiki_write: true,
+}
+
+/**
+ * 도구별 동시성 표시 — 파괴적(쓰기/실행/삭제) 도구는 exclusive(직렬),
+ * 읽기/검색 도구는 shared(병렬). omp의 per-tool concurrency 패턴 (→ 02-A).
+ * 도구 조립 후 호출한다.
+ */
+export function stampConcurrency(tools: AgentTool[]): AgentTool[] {
+  return tools.map((t) => (EXCLUSIVE_TOOL_NAMES[t.name] ? { ...t, concurrency: 'exclusive' as const } : t))
+}

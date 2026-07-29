@@ -52,6 +52,7 @@ export interface DeviceCodeInfo {
   deviceCode: string
   userCode: string
   verificationUri: string
+  verificationUriComplete?: string
   expiresIn: number
   interval: number
 }
@@ -130,6 +131,7 @@ export async function requestDeviceCode(config: OAuthFlowConfig): Promise<Device
     deviceCode: String(json.device_code),
     userCode: String(json.user_code),
     verificationUri: String(json.verification_uri ?? json.verification_url ?? ''),
+    verificationUriComplete: json.verification_uri_complete ? String(json.verification_uri_complete) : undefined,
     expiresIn: Number(json.expires_in ?? 900),
     interval: Number(json.interval ?? 5),
   }

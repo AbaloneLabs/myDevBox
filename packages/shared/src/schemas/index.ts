@@ -108,6 +108,14 @@ export const saveRoleMappingsSchema = z.object({
 
 export type SaveRoleMappingsInput = z.infer<typeof saveRoleMappingsSchema>
 
+export const discoverTransientSchema = z.object({
+  provider: z.string().min(1),
+  apiKey: z.string().optional(),
+  baseUrlOverride: z.string().optional(),
+})
+
+export type DiscoverTransientInput = z.infer<typeof discoverTransientSchema>
+
 // ============ Tasks ============
 export const createTaskSchema = z.object({
   title: z.string().min(1).max(200),

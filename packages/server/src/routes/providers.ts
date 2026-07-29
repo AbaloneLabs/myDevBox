@@ -5,11 +5,12 @@
 import type { FastifyInstance } from 'fastify'
 import { eq } from 'drizzle-orm'
 import type { ApiResponse, ProviderCredential, ProviderDescriptorPublic, ModelRoleMapping } from '@mydevbox/shared'
-import { saveProviderSchema, saveRoleMappingsSchema } from '@mydevbox/shared'
+import { saveProviderSchema, saveRoleMappingsSchema, discoverTransientSchema } from '@mydevbox/shared'
 import { db } from '../db/connection.js'
 import { providerCredentials, modelRoles } from '../db/schema.js'
 import { encrypt, decrypt } from '../db/crypto.js'
 import { PROVIDERS, PROVIDER_BY_ID, resolveBaseUrl } from '../agent/llm/registry.js'
+import { OAUTH_PROVIDERS } from '../agent/oauth-registry.js'
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
@@ -23,7 +24,51 @@ function rowToCredential(row: typeof providerCredentials.$inferSelect): Provider
     defaultModel: row.defaultModel,
     isDefault: !!row.isDefault,
     hasApiKey: !!row.apiKeyEncrypted,
+    authType: row.oauthAccessTokenEncrypted ? 'oauth' : 'apikey',
+    cachedModels: row.cachedModels ?? undefined,
   }
+}
+
+/**
+ * 통합 모델 디스커버리 — OAuth 토큰이면 그걸 Bearer로(apiBaseUrl+apiExtraHeaders),
+ * API키면 그걸로(PROVIDER baseUrl). 성공 시 DB에 캐싱, 실패 시 기존 캐시 유지.
+ * storeOAuthTokens / POST /providers / GET /:id/models 가 호출.
+ */
+export async function discoverAndCacheModels(credId: string): Promise<string[]> {
+  const [cred] = await db.select().from(providerCredentials).where(eq(providerCredentials.id, credId))
+  if (!cred) return []
+  const oauthConfig = cred.oauthAccessTokenEncrypted ? OAUTH_PROVIDERS[cred.provider] : undefined
+  let baseUrl: string | undefined
+  let bearer = ''
+  const headers: Record<string, string> = { Accept: 'application/json' }
+  if (cred.oauthAccessTokenEncrypted && oauthConfig) {
+    baseUrl = oauthConfig.apiBaseUrl
+    try { bearer = decrypt(cred.oauthAccessTokenEncrypted) } catch { bearer = '' }
+    Object.assign(headers, oauthConfig.apiExtraHeaders ?? {})
+  } else {
+    const descriptor = PROVIDER_BY_ID[cred.provider]
+    baseUrl = descriptor ? resolveBaseUrl(descriptor, cred.baseUrlOverride ?? undefined) : undefined
+    if (cred.apiKeyEncrypted) { try { bearer = decrypt(cred.apiKeyEncrypted) } catch { bearer = '' } }
+  }
+  if (baseUrl) {
+    try {
+      const res = await fetch(`${baseUrl.replace(/\/$/, '')}/models`, {
+        headers: { ...headers, ...(bearer ? { Authorization: `Bearer ${bearer}` } : {}) },
+        signal: AbortSignal.timeout(10000),
+      })
+      if (res.ok) {
+        const json = (await res.json()) as { data?: Array<{ id: string }> }
+        const models = (json.data ?? []).map((m) => m.id).filter(Boolean)
+        await db.update(providerCredentials)
+          .set({ cachedModels: models, modelsCachedAt: new Date() })
+          .where(eq(providerCredentials.id, credId))
+        return models
+      }
+    } catch {
+      // 일시적 실패 — 기존 캐시 유지
+    }
+  }
+  return cred.cachedModels ?? []
 }
 
 export async function providerRoutes(app: FastifyInstance): Promise<void> {
@@ -89,6 +134,9 @@ export async function providerRoutes(app: FastifyInstance): Promise<void> {
           isDefault: isDefault ?? false,
         }).returning())[0]
 
+    // 저장(또는 갱신) 직후 모델 디스커버리 (best-effort, 캐싱)
+    await discoverAndCacheModels(row.id).catch(() => {})
+
     return { success: true, data: rowToCredential(row) }
   })
 
@@ -113,25 +161,31 @@ export async function providerRoutes(app: FastifyInstance): Promise<void> {
     return { success: true, data: null }
   })
 
-  // 모델 디스커버리 (OpenAI-compat /v1/models)
+  // 모델 디스커버리 (통합 — OAuth 토큰/API키 모두) + 캐싱
   app.get('/providers/:id/models', async (request, reply): Promise<ApiResponse<string[]>> => {
     const { id } = request.params as { id: string }
-    const [row] = await db.select().from(providerCredentials).where(eq(providerCredentials.id, id))
-    if (!row) {
-      return reply.code(404).send({ success: false, error: 'Provider config not found' })
+    if (!UUID_RE.test(id)) {
+      return reply.code(400).send({ success: false, error: 'Invalid id' })
     }
-    const descriptor = PROVIDER_BY_ID[row.provider]
-    if (!descriptor?.supportsDiscovery) {
-      return { success: true, data: [] }
+    const models = await discoverAndCacheModels(id)
+    return { success: true, data: models }
+  })
+
+  // 저장 전 모델 디스커버리 (입력한 provider+키+baseUrl로 /models 호출, 저장 안 함)
+  app.post('/providers/discover', async (request, reply): Promise<ApiResponse<string[]>> => {
+    const parsed = discoverTransientSchema.safeParse(request.body)
+    if (!parsed.success) {
+      return reply.code(400).send({ success: false, error: 'Validation Error', details: parsed.error.issues })
     }
-    const baseUrl = resolveBaseUrl(descriptor, row.baseUrlOverride ?? undefined)
+    const { provider, apiKey, baseUrlOverride } = parsed.data
+    const descriptor = PROVIDER_BY_ID[provider]
+    const baseUrl = descriptor ? resolveBaseUrl(descriptor, baseUrlOverride ?? undefined) : (baseUrlOverride ?? undefined)
     if (!baseUrl) {
       return { success: true, data: [] }
     }
-    const apiKey = row.apiKeyEncrypted ? decrypt(row.apiKeyEncrypted) : ''
     try {
       const res = await fetch(`${baseUrl.replace(/\/$/, '')}/models`, {
-        headers: apiKey ? { Authorization: `Bearer ${apiKey}` } : {},
+        headers: { Accept: 'application/json', ...(apiKey ? { Authorization: `Bearer ${apiKey}` } : {}) },
         signal: AbortSignal.timeout(10000),
       })
       if (!res.ok) {

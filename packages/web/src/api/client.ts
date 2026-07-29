@@ -535,6 +535,17 @@ export const api = {
   async discoverModels(id: string): Promise<string[]> {
     return request<string[]>(`/providers/${id}/models`)
   },
+  // 저장 없이 입력된 키/baseUrl로 모델 목록을 즉시 조회한다 (POST /providers/discover).
+  async discoverModelsTransient(input: {
+    provider: string
+    apiKey?: string
+    baseUrlOverride?: string
+  }): Promise<string[]> {
+    return request<string[]>('/providers/discover', {
+      method: 'POST',
+      body: JSON.stringify(input),
+    })
+  },
   // ============ 역할별 모델 라우팅 (role → 자격증명+모델) ============
 
   async getRoleMappings(): Promise<ModelRoleMapping[]> {

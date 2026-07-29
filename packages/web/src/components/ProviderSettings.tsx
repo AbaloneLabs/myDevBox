@@ -86,6 +86,8 @@ export function ProviderSettings() {
     buildRoleForm(roleMappings, providers),
   )
   const [roleSaving, setRoleSaving] = useState(false)
+  // 행별 모델 새로고침 로딩 상태 (provider id, 없으면 null)
+  const [refreshingModels, setRefreshingModels] = useState<string | null>(null)
 
   // 오버레이가 열릴 때 폼 초기화 (프로바이더가 없으면 기본 체크)
   useEffect(() => {
@@ -133,11 +135,22 @@ export function ProviderSettings() {
   }
 
   const handleDiscover = async () => {
-    if (!existingRow) return
+    if (!selectedProvider) return
+    // 저장 전(새 프로바이더)이면 API 키를 먼저 입력받아야 임시 조회 가능
+    if (!existingRow && !apiKey.trim()) {
+      setError('API 키를 먼저 입력하세요')
+      return
+    }
     setDiscovering(true)
     setError(null)
     try {
-      const models = await api.discoverModels(existingRow.id)
+      const models = existingRow
+        ? await api.discoverModels(existingRow.id)
+        : await api.discoverModelsTransient({
+            provider: selectedProvider,
+            apiKey: apiKey.trim(),
+            baseUrlOverride: baseUrl.trim() || undefined,
+          })
       setDiscoveredModels(models)
       if (models.length && !model) setModel(models[0])
     } catch (e) {
@@ -197,14 +210,39 @@ export function ProviderSettings() {
       setError(e instanceof Error ? e.message : '프로바이더 삭제 중 오류가 발생했습니다')
     }
   }
-  const handleCopyCode = async () => {
-    if (!oauthPending?.userCode) return
+  const handleRefreshModels = async (id: string) => {
+    setRefreshingModels(id)
+    setError(null)
     try {
-      await navigator.clipboard.writeText(oauthPending.userCode)
+      await api.discoverModels(id)
+      await loadProviders()
+    } catch (e) {
+      setError(e instanceof Error ? e.message : '모델 목록을 새로고침하지 못했습니다')
+    } finally {
+      setRefreshingModels(null)
+    }
+  }
+  const handleCopyCode = async () => {
+    const code = oauthPending?.userCode
+    if (!code) return
+    try {
+      if (navigator.clipboard && window.isSecureContext) {
+        await navigator.clipboard.writeText(code)
+      } else {
+        // HTTP(비보안 컨텍스트) 폴백 — 임시 textarea + execCommand. clipboard API가 없을 때 쓴다.
+        const ta = document.createElement('textarea')
+        ta.value = code
+        ta.style.position = 'fixed'
+        ta.style.opacity = '0'
+        document.body.appendChild(ta)
+        ta.select()
+        document.execCommand('copy')
+        document.body.removeChild(ta)
+      }
       setCopied(true)
       setTimeout(() => setCopied(false), 1500)
     } catch {
-      // 클립보드 접근 실패 — 무시
+      // 최후의 수단: 코드 영역을 사용자가 직접 선택하도록 둔다.
     }
   }
 
@@ -280,41 +318,72 @@ export function ProviderSettings() {
               <p className="ps-empty">설정된 프로바이더가 없습니다.</p>
             ) : (
               <ul className="ps-provider-list">
-                {providers.map((p) => (
-                  <li key={p.id} className="ps-provider-row">
-                    <div className="ps-provider-info">
-                      <div className="ps-provider-name">
-                        {p.displayName}
-                        {p.isDefault && <span className="ps-default-badge">기본</span>}
+                {providers.map((p) => {
+                  const cachedModels = p.cachedModels ?? []
+                  return (
+                    <li key={p.id} className="ps-provider-row">
+                      <div className="ps-provider-info">
+                        <div className="ps-provider-name">
+                          {p.displayName}
+                          {p.isDefault && <span className="ps-default-badge">기본</span>}
+                        </div>
+                        <div className="ps-provider-meta">
+                          <span className="ps-mono">{p.provider}</span>
+                          <span className="ps-dot">·</span>
+                          <span className="ps-mono">{p.defaultModel}</span>
+                          <span className="ps-dot">·</span>
+                          <span className={p.authType === 'oauth' || p.hasApiKey ? 'ps-key-ok' : 'ps-key-missing'}>
+                            {p.authType === 'oauth' ? 'OAuth 연결됨' : p.hasApiKey ? 'API 키 설정됨' : 'API 키 없음'}
+                          </span>
+                        </div>
+                        <div className="ps-provider-models">
+                          {cachedModels.length > 0 ? (
+                            <>
+                              <span className="ps-models-count">모델 {cachedModels.length}개</span>
+                              <span className="ps-models-chips">
+                                {cachedModels.slice(0, 4).map((m) => (
+                                  <span key={m} className="ps-model-chip ps-mono">{m}</span>
+                                ))}
+                                {cachedModels.length > 4 && <span className="ps-models-more">…</span>}
+                              </span>
+                            </>
+                          ) : (
+                            <span className="ps-models-empty">모델 목록 미확보</span>
+                          )}
+                          <button
+                            type="button"
+                            className="ps-action-btn ps-refresh-models-btn"
+                            onClick={() => void handleRefreshModels(p.id)}
+                            disabled={refreshingModels === p.id}
+                          >
+                            {refreshingModels === p.id ? (
+                              <LoaderIcon size={12} className="spin" />
+                            ) : (
+                              <RefreshIcon size={12} />
+                            )}
+                            <span>모델 새로고침</span>
+                          </button>
+                        </div>
                       </div>
-                      <div className="ps-provider-meta">
-                        <span className="ps-mono">{p.provider}</span>
-                        <span className="ps-dot">·</span>
-                        <span className="ps-mono">{p.defaultModel}</span>
-                        <span className="ps-dot">·</span>
-                        <span className={p.hasApiKey ? 'ps-key-ok' : 'ps-key-missing'}>
-                          {p.hasApiKey ? 'API 키 설정됨' : 'API 키 없음'}
-                        </span>
+                      <div className="ps-provider-actions">
+                        <button
+                          className="ps-action-btn"
+                          onClick={() => handleSetDefault(p.id)}
+                          disabled={p.isDefault}
+                        >
+                          기본으로 설정
+                        </button>
+                        <button
+                          className="ps-action-btn danger"
+                          onClick={() => handleDelete(p.id)}
+                        >
+                          <TrashIcon size={13} />
+                          삭제
+                        </button>
                       </div>
-                    </div>
-                    <div className="ps-provider-actions">
-                      <button
-                        className="ps-action-btn"
-                        onClick={() => handleSetDefault(p.id)}
-                        disabled={p.isDefault}
-                      >
-                        기본으로 설정
-                      </button>
-                      <button
-                        className="ps-action-btn danger"
-                        onClick={() => handleDelete(p.id)}
-                      >
-                        <TrashIcon size={13} />
-                        삭제
-                      </button>
-                    </div>
-                  </li>
-                ))}
+                    </li>
+                  )
+                })}
               </ul>
             )}
           </section>
@@ -325,6 +394,8 @@ export function ProviderSettings() {
             <div className="ps-role-list">
               {MODEL_ROLES.map((role) => {
                 const row = roleForm[role]
+                const roleCred = providers.find((p) => p.id === row.credentialId)
+                const roleModels = roleCred?.cachedModels ?? []
                 return (
                   <div key={role} className="ps-role-row">
                     <div className="ps-role-meta">
@@ -359,7 +430,15 @@ export function ProviderSettings() {
                         onChange={(e) => handleRoleModelChange(role, e.target.value)}
                         placeholder="모델 이름"
                         disabled={providers.length === 0}
+                        list={`ps-role-models-${role}`}
                       />
+                      {roleModels.length > 0 && (
+                        <datalist id={`ps-role-models-${role}`}>
+                          {roleModels.map((m) => (
+                            <option key={m} value={m} />
+                          ))}
+                        </datalist>
+                      )}
                     </div>
                   </div>
                 )
@@ -558,7 +637,7 @@ export function ProviderSettings() {
                         type="button"
                         className="ps-discover-btn"
                         onClick={handleDiscover}
-                        disabled={!existingRow || discovering}
+                        disabled={discovering}
                       >
                         {discovering ? (
                           <>
@@ -574,7 +653,7 @@ export function ProviderSettings() {
                       </button>
                       {!existingRow && (
                         <span className="ps-hint">
-                          저장된 프로바이더가 있어야 모델을 불러올 수 있습니다.
+                          API 키를 입력하면 저장 전에도 모델을 불러올 수 있습니다.
                         </span>
                       )}
                     </div>

@@ -8,14 +8,16 @@
  */
 import type { OAuthFlowConfig } from './oauth.js'
 
+// Kimi CLI를 사칭(퍼스트파티 client_id 호환). omp getKimiCommonHeaders 포맷에 맞춤 —
+// User-Agent/X-Msh-Version이 어댑터 식별에 쓰여 "No available adapters" 회피.
 const KIMI_HEADERS: Record<string, string> = {
-  'User-Agent': 'MyDevBox/0.1',
+  'User-Agent': 'KimiCLI/0.1.0',
   'X-Msh-Platform': 'kimi_cli',
   'X-Msh-Version': '0.1.0',
   'X-Msh-Device-Name': 'mydevbox',
-  'X-Msh-Device-Model': 'server',
-  'X-Msh-Os-Version': 'linux',
-  'X-Msh-Device-Id': 'mydevbox-0001',
+  'X-Msh-Device-Model': 'Linux x86_64',
+  'X-Msh-Os-Version': '6.1.0',
+  'X-Msh-Device-Id': 'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
 }
 
 export const OAUTH_PROVIDERS: Record<string, OAuthFlowConfig> = {

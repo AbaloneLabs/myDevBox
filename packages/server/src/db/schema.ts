@@ -90,6 +90,8 @@ export const providerCredentials = pgTable('provider_credentials', {
   oauthAccessTokenEncrypted: text('oauth_access_token_encrypted'),
   oauthRefreshTokenEncrypted: text('oauth_refresh_token_encrypted'),
   oauthExpiresAt: timestamp('oauth_expires_at', { withTimezone: true }),
+  cachedModels: text('cached_models').array(),
+  modelsCachedAt: timestamp('models_cached_at', { withTimezone: true }),
   baseUrlOverride: text('base_url_override'),
   defaultModel: text('default_model').notNull(),
   isDefault: boolean('is_default').default(false),

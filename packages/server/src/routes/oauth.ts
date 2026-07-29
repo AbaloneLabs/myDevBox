@@ -11,6 +11,7 @@ import { eq } from 'drizzle-orm'
 import { db } from '../db/connection.js'
 import { providerCredentials } from '../db/schema.js'
 import { encrypt } from '../db/crypto.js'
+import { discoverAndCacheModels } from './providers.js'
 import { OAUTH_PROVIDERS } from '../agent/oauth-registry.js'
 import {
   generatePKCE,
@@ -45,7 +46,7 @@ function defaultModelOf(config: OAuthFlowConfig): string {
 }
 
 /** 토큰 획득 성공 → provider_credentials upsert. 첫 프로바이저면 isDefault. */
-async function storeOAuthTokens(provider: string, tokens: OAuthTokens, defaultModel: string): Promise<void> {
+async function storeOAuthTokens(provider: string, tokens: OAuthTokens, defaultModel: string): Promise<string> {
   const [existing] = await db.select().from(providerCredentials).where(eq(providerCredentials.provider, provider))
   const alreadyConfigured = existing ? true : (await db.select().from(providerCredentials)).length > 0
   const patch = {
@@ -59,9 +60,10 @@ async function storeOAuthTokens(provider: string, tokens: OAuthTokens, defaultMo
   }
   if (existing) {
     await db.update(providerCredentials).set(patch).where(eq(providerCredentials.id, existing.id))
-  } else {
-    await db.insert(providerCredentials).values({ ...patch, baseUrlOverride: null })
+    return existing.id
   }
+  const [row] = await db.insert(providerCredentials).values({ ...patch, baseUrlOverride: null }).returning()
+  return row.id
 }
 
 export async function oauthRoutes(app: FastifyInstance): Promise<void> {
@@ -94,7 +96,7 @@ export async function oauthRoutes(app: FastifyInstance): Promise<void> {
           data: {
             flowType: 'device-code',
             userCode: info.userCode,
-            verificationUri: info.verificationUri,
+            verificationUri: info.verificationUriComplete ?? info.verificationUri,
             interval: info.interval,
           },
         }
@@ -132,7 +134,8 @@ export async function oauthRoutes(app: FastifyInstance): Promise<void> {
       return { success: true, data: { status: 'error', error: result.error } }
     }
     pendingDevice.delete(config.provider)
-    await storeOAuthTokens(config.provider, result.tokens, defaultModelOf(config))
+    const credId = await storeOAuthTokens(config.provider, result.tokens, defaultModelOf(config))
+    await discoverAndCacheModels(credId).catch(() => {})
     return { success: true, data: { status: 'success' } }
   })
 
@@ -150,7 +153,8 @@ export async function oauthRoutes(app: FastifyInstance): Promise<void> {
     pendingPkce.delete(state)
     try {
       const tokens = await exchangeAuthCode(config, code, pending.verifier, publicCallbackUrl(pending.provider))
-      await storeOAuthTokens(pending.provider, tokens, defaultModelOf(config))
+      const credId = await storeOAuthTokens(pending.provider, tokens, defaultModelOf(config))
+      await discoverAndCacheModels(credId).catch(() => {})
       return reply.type('text/html').send('<h1>OAuth 완료</h1>이 창을 닫고 MyDevBox로 돌아가세요.')
     } catch (e) {
       return reply.type('text/html').send(`<h1>OAuth 실패</h1>${(e as Error).message}`)

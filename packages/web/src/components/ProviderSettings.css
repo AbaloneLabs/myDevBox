@@ -166,6 +166,51 @@
 .ps-key-missing {
   color: var(--red);
 }
+.ps-provider-models {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.ps-models-count {
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+.ps-models-chips {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.ps-model-chip {
+  font-size: 10.5px;
+  padding: 1px 6px;
+  border-radius: 4px;
+  background: var(--bg-hover);
+  border: 1px solid var(--border);
+  color: var(--text-secondary);
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ps-models-more {
+  color: var(--text-muted);
+}
+
+.ps-models-empty {
+  color: var(--text-muted);
+}
+
+.ps-refresh-models-btn {
+  margin-left: auto;
+}
 
 .ps-provider-actions {
   display: flex;

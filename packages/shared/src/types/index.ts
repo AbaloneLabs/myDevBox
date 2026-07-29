@@ -240,6 +240,8 @@ export interface ProviderCredential {
   defaultModel: string
   isDefault: boolean
   hasApiKey: boolean
+  authType: 'apikey' | 'oauth'
+  cachedModels?: string[]
 }
 
 // ============ 역할별 모델 라우팅 ============
